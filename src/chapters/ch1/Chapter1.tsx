@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Ahead, Ask, Controls, Derive, Example, ExplainBack, Formula, InOtherWords, Knob, Lead, M, P, Q, Quiz, Readout, Rule, Table, Toggle, Trap } from '../../story/blocks';
+import { Ahead, Ask, Controls, Derive, Example, Formula, InOtherWords, Knob, Lead, M, P, Q, Quiz, Readout, Rule, Table, Toggle, Trap } from '../../story/blocks';
 import { Scene, StoryShell } from '../../story/StoryShell';
 
 import { Tex } from '../../ui/Tex';
 import { DEFAULTS, Params } from './params';
+import { EXPLAIN1 } from './Practice1';
 import { bayes8, CELLS8, Phi, PRIOR8, World1 } from './World1';
 
 const BINS = ['4 m', '2 m', '1 m', '0.5 m', '0.25 m', 'smooth'];
@@ -124,6 +125,9 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
               <P>
                 Mathematicians call a quantity like this — something we describe by how plausible each of its values is — a <b>random variable</b>. The car's position isn't random in the sense of dice;
                 it's random because <i>we don't know it</i>.
+              </P>
+              <P>
+                A note on notation you'll meet on the slides: a capital letter like <M>X</M> often names the random variable itself (“the car's position, whatever it is”), and a small <M>x</M> a particular value it could take (“100 m”). So <M>{'\mathbb E[X]'}</M> on a slide and <M>{'\mathbb E[x]'}</M> here mean the same thing.
               </P>
             </>
           ),
@@ -385,6 +389,14 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 Average squared miss: <b>{mse.toFixed(1)} m²</b> {Math.abs(p.guess - mean3) < 0.3 ? '← the smallest possible' : `(the mean ${mean3.toFixed(1)} m would give ${var3.toFixed(1)} m²)`}
               </Readout>
               <Rule>The mean is the guess with the smallest average squared error. That's why the lecture calls it the minimum mean squared error (MMSE) estimator.</Rule>
+              <P>The slider shows it; here's why it must be so. Two lines of algebra, and every step is something you already know:</P>
+              <Derive
+                steps={[
+                  { tex: '\\mathbb E\\big[(x-g)^2\\big] = \\mathbb E\\big[\\big((x-\\bar x) + (\\bar x - g)\\big)^2\\big]', why: 'Sneak the mean in: subtract x̄ and add it back. Nothing changed.' },
+                  { tex: '= \\mathbb E\\big[(x-\\bar x)^2\\big] + 2(\\bar x - g)\\,\\underbrace{\\mathbb E[x-\\bar x]}_{=\\,0} + (\\bar x - g)^2', why: 'Multiply out the square. The middle term vanishes: on average, x misses its own mean by zero.' },
+                  { tex: '= \\mathbb V[x] + (\\bar x - g)^2', why: 'The first term is the variance — it doesn’t depend on your guess. The second is never negative and is zero only when g = x̄. So the best guess is the mean, and the smallest possible error is the variance.' },
+                ]}
+              />
               <Quiz
                 id="ch1-q3"
                 label="A car is at 0 m with probability 0.8 and at 10 m with probability 0.2. What's the expec…"
@@ -462,6 +474,9 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 <Knob label="σ" value={p.sig4} min={2} max={10} step={0.5} onChange={set('sig4')} unit=" m" />
               </Controls>
               <P>Make σ bigger: the bell gets wider and flatter. It has to — there's still exactly 1 kg of sand.</P>
+              <P>
+                One more word you'll need. The mean and the variance are called the <b>first two moments</b> of a density: the mean says <i>where</i> the sand is, the variance <i>how spread out</i>. For a bell, these two numbers describe it completely — remember that, because in Chapter 8 “moment matching” replaces a complicated belief by the bell with the same mean and variance.
+              </P>
               <Ahead>
                 The Kalman filter's matrix <M>{'\\mathbf P'}</M> is this variance, grown up to several dimensions. Prediction makes it bigger, a measurement makes it smaller. And “gating”
                 (Chapter 6) asks: is a new pin more than about 3σ away?
@@ -789,6 +804,31 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
           ),
         },
         {
+          id: 's8.2b',
+          body: (
+            <>
+              <P>Where does that red bell actually come from? From a one-line description of the radar, called the <b>sensor model</b> (or measurement model):</P>
+              <Formula
+                tex="\begin{gathered} z = x + w, \qquad w \sim \mathcal N(0,\,\sigma^2) \\ \Downarrow \\ p(z\mid x) = \mathcal N(z;\, x,\, \sigma^2) \end{gathered}"
+                rows={[
+                  ['z', 'the reading the radar reports'],
+                  ['x', 'the true position (unknown)'],
+                  ['w', 'the radar’s error: a random number, bell-shaped around 0 with spread σ'],
+                  ['p(z\\mid x)', 'if the car is at x, the reading is x plus a random error — so the reading is a bell centred on x. That bell, read as a function of x, is the likelihood.', 'lik'],
+                ]}
+              />
+              <Example>
+                <p>
+                  Car at 120 m, σ = 10 m. Readings between 110 and 130 m happen 68 % of the time (±1σ); a reading of 150 m (3σ away) almost never does. So if the radar <i>says</i> 125 m, positions near 125 explain it well and positions far away explain it badly — exactly the red columns.
+                </p>
+              </Example>
+              <Ahead>
+                In Chapter 3 the sensor model grows up to <M>{'\\mathbf z_k = \\mathbf H\\mathbf x_k + \\mathbf w_k'}</M>: <M>{'\\mathbf H'}</M> picks out what the sensor can see (say, only the position, not the speed), and <M>{'\\mathbf w_k \\sim \\mathcal N(\\mathbf 0, \\mathbf R)'}</M> is its error. Same idea, with matrices.
+              </Ahead>
+            </>
+          ),
+        },
+        {
           id: 's8.3',
           body: (
             <>
@@ -844,6 +884,18 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <InOtherWords>The lecture writes it as p(x|z) ← p(z|x), p(x): turn the sensor's knowledge about itself into knowledge about the car.</InOtherWords>
+              <P>
+                One more property makes Bayes usable for tracking. Every rule in this chapter keeps working if you <b>condition everything on some extra knowledge</b> — call it 𝒵, say “all the earlier radar readings”. Just add “| 𝒵” everywhere:
+              </P>
+              <Formula
+                tex="p(x\mid z, \mathcal Z) = \frac{p(z\mid x, \mathcal Z)\;p(x\mid \mathcal Z)}{p(z\mid \mathcal Z)}"
+                rows={[
+                  ['p(x\\mid \\mathcal Z)', 'the prior: what the earlier readings already told us'],
+                  ['p(z\\mid x, \\mathcal Z)', 'the likelihood of the new reading (usually the old readings add nothing here: p(z | x))'],
+                  ['p(x\\mid z, \\mathcal Z)', 'the new belief, using old readings and the new one'],
+                ]}
+              />
+              <Ahead>This is literally the filtering step of Chapter 2: yesterday's posterior becomes today's prior, and each beep updates it. It's Bayes, run over and over.</Ahead>
             </>
           ),
         },
@@ -1108,6 +1160,14 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                   ['\\mathbf a', 'a fixed shift. E.g. measuring from the radar at 70 m instead of from the road start: y = x − 70. It moves the mean, never the spread.'],
                 ]}
               />
+              <P>Why A X Aᵀ? Not a rule to memorise — it falls straight out of the definition of the covariance:</P>
+              <Derive
+                steps={[
+                  { tex: '\\mathbf y - \\bar{\\mathbf y} = (\\mathbf a + \\mathbf A\\mathbf x) - (\\mathbf a + \\mathbf A\\bar{\\mathbf x}) = \\mathbf A(\\mathbf x - \\bar{\\mathbf x})', why: 'How far y is from its mean: the shift a cancels, only A acting on x’s own miss is left.' },
+                  { tex: '\\mathbb C[\\mathbf y] = \\mathbb E\\big[(\\mathbf y-\\bar{\\mathbf y})(\\mathbf y-\\bar{\\mathbf y})^\\top\\big] = \\mathbb E\\big[\\mathbf A(\\mathbf x-\\bar{\\mathbf x})(\\mathbf x-\\bar{\\mathbf x})^\\top\\mathbf A^\\top\\big]', why: 'Definition of the covariance matrix (Scene 5), then insert the line above. Transposing a product flips the order: (A v)ᵀ = vᵀ Aᵀ.' },
+                  { tex: '= \\mathbf A\\,\\mathbb E\\big[(\\mathbf x-\\bar{\\mathbf x})(\\mathbf x-\\bar{\\mathbf x})^\\top\\big]\\,\\mathbf A^\\top = \\mathbf A\\mathbf X\\mathbf A^\\top', why: 'A is a fixed matrix, so it slides out of the average — just like a constant factor in 𝔼[3x] = 3𝔼[x]. What’s left inside is X.' },
+                ]}
+              />
               <Example>
                 <p>Position variance 25 m², speed variance 4 m²/s², no correlation, drive Δt = 1 s:</p>
                 <Tex
@@ -1189,29 +1249,11 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <P>
-                <b>Explain it back.</b> An oral exam tests whether you can <i>say</i> it. For each question, answer out loud first, then open the model answer and rate yourself honestly. Your ratings appear under <b>Revise</b> (top right), so you know what to look at again.
+                <b>Now prove it to yourself.</b> Reading a chapter isn't the same as being able to do it. The <b>Practice</b> page has eight short exercises — you compute, the app checks — and the explain-it-back questions for the oral exam.
               </P>
-              <ExplainBack id="ch1-e1" q="1. What is a probability density, and how do you get a probability from it?">
-                <p>A non-negative function with total area 1 — “probability per unit”. Probabilities are areas: P(a &lt; x &lt; b) = ∫ₐᵇ p(x) dx. A single exact value has probability zero, and a density can be larger than 1.</p>
-              </ExplainBack>
-              <ExplainBack id="ch1-e2" q="2. What is a marginal density, and where does it appear in tracking?">
-                <p>p(x) = ∫ p(x, y) dy: add up over the variable you don't care about. It's the prediction step (integrate out the old state) and the denominator in Bayes' rule.</p>
-              </ExplainBack>
-              <ExplainBack id="ch1-e3" q="3. Explain a conditional density with a table and with a picture.">
-                <p>Keep only the part of the joint that matches what you learned, then rescale it to sum to 1: p(x|y) = p(x, y)/p(y). In the picture: slice the landscape, then stretch the slice to area 1.</p>
-              </ExplainBack>
-              <ExplainBack id="ch1-e4" q="4. Derive Bayes' rule and name each term.">
-                <p>p(x, z) = p(x|z)p(z) = p(z|x)p(x), so p(x|z) = p(z|x)p(x)/∫p(z|x)p(x)dx. Prior p(x), likelihood p(z|x) (the sensor model), posterior p(x|z), normalisation in the denominator (independent of x).</p>
-              </ExplainBack>
-              <ExplainBack id="ch1-e5" q="5. What do x̄ and P mean in 𝒩(x; x̄, P), and why is the Mahalanobis distance better than a ruler?">
-                <p>x̄ is the mean (where the hill's top is); P the covariance (width and tilt; variances on the diagonal). The Mahalanobis distance measures misses in units of σ, direction by direction, so a 30 m miss along an accurate direction counts as much more surprising than 30 m along an inaccurate one.</p>
-              </ExplainBack>
-              <ExplainBack id="ch1-e6" q="6. What happens to a Gaussian under a linear map? Give the tracking example.">
-                <p>It stays Gaussian: mean A x̄ + a, covariance A X Aᵀ. Driving for Δt with A = [[1, Δt], [0, 1]] shears the (position, speed) ellipse and makes the position less certain — the Kalman prediction.</p>
-              </ExplainBack>
-              <ExplainBack id="ch1-e7" q="7. Why is the mean used as the estimate, and when is it misleading?">
-                <p>It minimises the mean squared error (MMSE). It misleads when the belief has several bumps: it can land between them where the object never is — the reason PDAF “loses multimodality”.</p>
-              </ExplainBack>
+              <button className="sx-cta" onClick={() => (window.location.hash = '#/ch1/practice')}>
+                Go to Practice →
+              </button>
               <P>Next: Chapter 2 sets this belief in motion — predict, measure, repeat.</P>
             </>
           ),
@@ -1220,5 +1262,5 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
     },
   ];
 
-  return <StoryShell chapterId="ch1" chapterLabel="Chapter 1" title="The car in the dark" scenes={scenes} onHome={onHome} renderWorld={(step, hl, nonce) => <World1 step={step} hl={hl} p={p} nonce={nonce} />} />;
+  return <StoryShell chapterId="ch1" chapterLabel="Chapter 1" title="The car in the dark" scenes={scenes} onHome={onHome} renderWorld={(step, hl, nonce) => <World1 step={step} hl={hl} p={p} nonce={nonce} />} extraItems={EXPLAIN1.map((e) => ({ id: e.id, kind: 'explain' as const, label: e.q, step: '#/ch1/practice' }))} />;
 }

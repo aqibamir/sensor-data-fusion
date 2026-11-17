@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { Component, createContext, ReactNode, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ChapterTabs } from './ChapterFrame';
 import { progress, useProgress } from './progress';
 
 export interface Step {
@@ -61,6 +62,7 @@ export function StoryShell({
   scenes,
   renderWorld,
   onHome,
+  extraItems = [],
 }: {
   chapterId: string;
   chapterLabel: string;
@@ -68,6 +70,8 @@ export function StoryShell({
   scenes: Scene[];
   renderWorld: (stepId: string, hl: string | null, camNonce: number) => ReactNode;
   onHome: () => void;
+  /** Checkables that live outside the story (e.g. explain-back on the Practice page). Their `step` is a URL hash. */
+  extraItems?: Checkable[];
 }) {
   const allSteps = useMemo(() => scenes.flatMap((s, si) => s.steps.map((st) => ({ ...st, scene: s.id, sceneIdx: si }))), [scenes]);
   const saved = progress.get().step[chapterId];
@@ -120,6 +124,10 @@ export function StoryShell({
 
   /** Instant jump: no smooth scroll through 40 screens, and the world switches only once, on arrival. */
   function jumpTo(stepId: string, close = true) {
+    if (stepId.startsWith('#')) {
+      window.location.hash = stepId;
+      return;
+    }
     const root = scroller.current;
     const el = root?.querySelector<HTMLElement>(`[data-step="${stepId}"]`);
     if (!root || !el) return;
@@ -164,7 +172,7 @@ export function StoryShell({
   const scene = scenes[cur.sceneIdx];
   const progressFrac = (idx + 1) / allSteps.length;
   const minsLeft = Math.max(1, Math.round(allSteps.slice(idx).reduce((s, st) => s + (minutes[st.id] ?? 0.8), 0) * 1.3));
-  const items = Object.values(registry);
+  const items = [...Object.values(registry), ...extraItems];
   const quizzes = items.filter((i) => i.kind === 'quiz');
   const explains = items.filter((i) => i.kind === 'explain');
   const firstTry = quizzes.filter((q) => p.quiz[q.id] === 'first-try').length;
@@ -182,15 +190,11 @@ export function StoryShell({
       <RegistryCtx.Provider value={register}>
         <div className="sx">
           <header className="sx-top">
-            <button className="sx-brand" onClick={onHome}>
+            <button className="sx-brand" onClick={onHome} title={title}>
               <span className="sx-logo" />
-              Fusion
+              Fusion <span className="cx-crumb">· {chapterLabel}</span>
             </button>
-            <div className="sx-top-title">
-              <span className="sx-top-ch">{chapterLabel}</span>
-              <span className="sx-top-sep">/</span>
-              <span>{title}</span>
-            </div>
+            <ChapterTabs chapterId={chapterId} view="story" />
             <div className="sx-top-right">
               <span className="sx-top-meta">
                 {scene.kicker} · about {minsLeft} min left
@@ -245,6 +249,12 @@ export function StoryShell({
                 </div>
                 <div>
                   <b>{firstTry}</b> of {quizzes.length} checks right on the first try
+                </div>
+                <div>
+                  <b>{Object.entries(p.exercise).filter(([k, v]) => k.startsWith(chapterId + '-p') && v !== 'revealed').length}</b> practice exercises solved ·{' '}
+                  <a className="sx-link" href={`#/${chapterId}/practice`}>
+                    open Practice
+                  </a>
                 </div>
               </div>
               <div className="sx-review-h">Explain it back</div>

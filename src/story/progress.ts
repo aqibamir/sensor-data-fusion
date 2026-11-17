@@ -9,11 +9,12 @@ export interface Progress {
   step: Record<string, string>; // chapter → last active step id
   quiz: Record<string, 'first-try' | 'retry'>; // quiz id → result of the FIRST answer
   explain: Record<string, 'yes' | 'not-yet'>; // explain-back id → self-rating
+  exercise: Record<string, 'clean' | 'solved' | 'revealed'>; // practice id → solved without help / with hints / looked at the solution
   seenIntro: boolean;
 }
 
 const KEY = 'fusion-explorer-v2';
-const EMPTY: Progress = { step: {}, quiz: {}, explain: {}, seenIntro: false };
+const EMPTY: Progress = { step: {}, quiz: {}, explain: {}, exercise: {}, seenIntro: false };
 
 let state: Progress = load();
 const listeners = new Set<() => void>();
@@ -48,17 +49,25 @@ export const progress = {
     commit({ ...state, quiz: { ...state.quiz, [id]: correct ? 'first-try' : 'retry' } });
   },
   rateExplain: (id: string, v: 'yes' | 'not-yet') => commit({ ...state, explain: { ...state.explain, [id]: v } }),
+  recordExercise: (id: string, v: 'clean' | 'solved' | 'revealed') => {
+    const cur = state.exercise[id];
+    // keep the best honest record: once solved, revealing the solution later doesn't erase it
+    if (cur === 'clean' || (cur === 'solved' && v !== 'clean')) return;
+    commit({ ...state, exercise: { ...state.exercise, [id]: v } });
+  },
   dismissIntro: () => commit({ ...state, seenIntro: true }),
   reset: (chapter: string, ids: string[]) => {
     const quiz = { ...state.quiz };
     const explain = { ...state.explain };
+    const exercise = { ...state.exercise };
     ids.forEach((id) => {
       delete quiz[id];
       delete explain[id];
+      delete exercise[id];
     });
     const step = { ...state.step };
     delete step[chapter];
-    commit({ ...state, quiz, explain, step });
+    commit({ ...state, quiz, explain, exercise, step });
   },
   subscribe: (l: () => void) => {
     listeners.add(l);

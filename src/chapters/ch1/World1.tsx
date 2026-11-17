@@ -689,7 +689,7 @@ export function bayes8(z: number, s: number) {
 }
 
 function Act8({ step, p, hl }: { step: string; p: Params; hl: string | null }) {
-  const stage = { 's8.1': 1, 's8.2': 2, 's8.3': 3, 's8.4': 4, 's8.5': 4, 's8.6': 5 }[step] ?? 1;
+  const stage = { 's8.1': 1, 's8.2': 2, 's8.2b': 2, 's8.3': 3, 's8.4': 4, 's8.5': 4, 's8.6': 5 }[step] ?? 1;
   const { lik, prod, post } = bayes8(p.z8, p.s8);
   const H = 2.6;
   const g = useAnimated(stage >= 3 ? 1 : 0, 3);
