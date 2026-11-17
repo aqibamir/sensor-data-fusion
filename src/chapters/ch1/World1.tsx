@@ -1,4 +1,5 @@
 import { Html, Line } from '@react-three/drei';
+import { createContext, useContext } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -7,7 +8,7 @@ import { M2, V2 } from '../../engine/mat2';
 import { mulberry32, randn } from '../../engine/rng';
 import { Camera, linspace, P3, Surface, useAnimated } from '../../three/primitives';
 import { Car, Column, Dune, Environment, Garage, Lamppost, Pin, Pulse, Radar, Road, ROAD_W, Speedometer, Tag, TrafficCone, W, wx } from '../../world/props';
-import { Params } from './params';
+import { DEFAULTS, Params } from './params';
 
 /* ======================================================================
    Helpers
@@ -50,8 +51,10 @@ const S = 12; // world height per (1 / metre) of density
 const FIELD_Z = -9; // the "maths field" behind the road
 const ms = linspace(60, 160, 801);
 
+/** Bumping the nonce (the stage's "Reset view" button) re-glides the camera to the story's shot. */
+const NonceCtx = createContext(0);
 function Shot({ pos, tgt }: { pos: P3; tgt: P3 }) {
-  return <Camera position={pos} target={tgt} />;
+  return <Camera position={pos} target={tgt} nonce={useContext(NonceCtx)} />;
 }
 
 /** Thin vertical guide line on the road. */
@@ -69,10 +72,10 @@ function RoadCurve({ f, scale, color, z = 0, from = 60, to = 160, width = 3, das
    World director
    ====================================================================== */
 
-export function World1({ step, hl, p }: { step: string; hl: string | null; p: Params }) {
+export function World1({ step, hl, p, nonce = 0 }: { step: string; hl: string | null; p: Params; nonce?: number }) {
   const act = step.split('.')[0];
   return (
-    <>
+    <NonceCtx.Provider value={nonce}>
       <Environment />
       <Road />
       <Radar />
@@ -90,7 +93,7 @@ export function World1({ step, hl, p }: { step: string; hl: string | null; p: Pa
       {act === 's11' && <Act11 step={step} p={p} hl={hl} />}
       {act === 's12' && <Act12 step={step} p={p} />}
       {act === 's13' && <Finale />}
-    </>
+    </NonceCtx.Provider>
   );
 }
 
@@ -604,7 +607,7 @@ function Act6({ step, p }: { step: string; p: Params }) {
       </>
     );
   }
-  const P = covFrom(p.sx, p.sy, p.rho);
+  const P = covFrom(DEFAULTS.sx, DEFAULTS.sy, DEFAULTS.rho);
   const wall = -4.5;
   const xs = linspace(-4, 4, 161);
   const marg = xs.map((x) => normal1(x, 0, P[0][0]));
@@ -646,8 +649,8 @@ function Act7({ step, p }: { step: string; p: Params }) {
       </>
     );
   }
-  const rho = step === 's7.3' ? 0 : p.rho;
-  const P = covFrom(p.sx, p.sy, rho);
+  const rho = step === 's7.3' ? 0 : DEFAULTS.rho;
+  const P = covFrom(DEFAULTS.sx, DEFAULTS.sy, rho);
   const y0 = p.y0;
   const xs = linspace(-4, 4, 161);
   const cm = (P[0][1] / P[1][1]) * y0;
@@ -686,7 +689,7 @@ export function bayes8(z: number, s: number) {
 }
 
 function Act8({ step, p, hl }: { step: string; p: Params; hl: string | null }) {
-  const stage = { 's8.1': 1, 's8.2': 2, 's8.3': 3, 's8.4': 4, 's8.5': 5 }[step] ?? 1;
+  const stage = { 's8.1': 1, 's8.2': 2, 's8.3': 3, 's8.4': 4, 's8.5': 4, 's8.6': 5 }[step] ?? 1;
   const { lik, prod, post } = bayes8(p.z8, p.s8);
   const H = 2.6;
   const g = useAnimated(stage >= 3 ? 1 : 0, 3);
@@ -895,7 +898,7 @@ function Act10({ step, p, hl }: { step: string; p: Params; hl: string | null }) 
   const c0: V2 = [1, 0.5];
   const radar: V2 = [c0[0] - 6 * along[0], c0[1] - 6 * along[1]];
   if (step === 's10.5') {
-    const P2 = covFrom(p.sx, p.sy, p.rho);
+    const P2 = covFrom(p.sx10, p.sy10, p.rho10);
     return (
       <>
         <Shot pos={[6, 7, FIELD_Z + 8]} tgt={[0, 0.5, FIELD_Z]} />

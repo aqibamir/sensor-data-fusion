@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Ahead, Ask, Controls, Derive, Example, Formula, InOtherWords, Knob, Lead, M, P, Q, Quiz, Readout, Rule, Table, Toggle, Trap } from '../../story/blocks';
+import { Ahead, Ask, Controls, Derive, Example, ExplainBack, Formula, InOtherWords, Knob, Lead, M, P, Q, Quiz, Readout, Rule, Table, Toggle, Trap } from '../../story/blocks';
 import { Scene, StoryShell } from '../../story/StoryShell';
 
 import { Tex } from '../../ui/Tex';
@@ -24,6 +24,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'cold-open',
       kicker: 'Prologue',
       title: 'A car in the dark',
+      concept: 'Why we need probability',
       steps: [
         {
           id: 's0.1',
@@ -93,6 +94,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'belief',
       kicker: 'Scene 1',
       title: 'We track a belief, not a car',
+      concept: 'State · random variable',
       steps: [
         {
           id: 's1.1',
@@ -158,6 +160,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
               <InOtherWords>“Our belief about where the car is, given everything the radar has told us so far.” You'll see this expression on nearly every slide of the course.</InOtherWords>
               <Ahead>Chapter 2 is about how this cloud moves when the car drives (it spreads) and how it shrinks when a new red pin arrives.</Ahead>
               <Quiz
+                id="ch1-q1"
+                label="Why don't we simply use the latest radar reading as the car's position?"
                 q="Why don't we simply use the latest radar reading as the car's position?"
                 options={[
                   { t: 'Because the radar is always wrong.', why: 'It isn’t always wrong — it’s noisy: usually close, never exact. The point is to say HOW close.' },
@@ -175,6 +179,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'density',
       kicker: 'Scene 2',
       title: 'Probability is sand',
+      concept: 'Probability density function (pdf)',
       steps: [
         {
           id: 's2.1',
@@ -282,6 +287,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
               <Trap>A density can be larger than 1. Only the area is limited to 1, never the height. If an examiner asks “can p(x) be 7?”, the answer is yes.</Trap>
               <Ahead>Every p(…) on the lecture slides is a dune like this, and every ∫ … dx is “add up the sand”. Even in 9 dimensions, it's still sand — just in a space you can't draw.</Ahead>
               <Quiz
+                id="ch1-q2"
+                label="The car is spread evenly between 0 m and 4 m. How tall is p(x) there?"
                 q="The car is spread evenly between 0 m and 4 m. How tall is p(x) there?"
                 options={[
                   { t: '1', why: 'Then the area would be 4 × 1 = 4 — four kilograms of sand.' },
@@ -299,6 +306,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'mean',
       kicker: 'Scene 3',
       title: 'One number, please',
+      concept: 'Expectation · MMSE',
       steps: [
         {
           id: 's3.1',
@@ -378,6 +386,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
               </Readout>
               <Rule>The mean is the guess with the smallest average squared error. That's why the lecture calls it the minimum mean squared error (MMSE) estimator.</Rule>
               <Quiz
+                id="ch1-q3"
+                label="A car is at 0 m with probability 0.8 and at 10 m with probability 0.2. What's the expec…"
                 q="A car is at 0 m with probability 0.8 and at 10 m with probability 0.2. What's the expectation?"
                 options={[
                   { t: '5 m', why: 'That would be the 50/50 case. Here the left side is much heavier.' },
@@ -395,6 +405,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'spread',
       kicker: 'Scene 4',
       title: 'How sure are we?',
+      concept: 'Variance · standard deviation σ',
       steps: [
         {
           id: 's4.1',
@@ -456,6 +467,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 (Chapter 6) asks: is a new pin more than about 3σ away?
               </Ahead>
               <Quiz
+                id="ch1-q4"
+                label="Radar A has σ = 2 m, radar B has σ = 20 m. Which is true?"
                 q="Radar A has σ = 2 m, radar B has σ = 20 m. Which is true?"
                 options={[
                   { t: 'B is better, because 20 > 2.', why: 'A larger σ means more spread — less precise.' },
@@ -473,6 +486,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'joint',
       kicker: 'Scene 5',
       title: 'Two unknowns at once',
+      concept: 'Joint pdf · covariance',
       steps: [
         {
           id: 's5.1',
@@ -526,6 +540,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <Quiz
+                id="ch1-q5"
+                label="What is p(near, fast)?"
                 q="What is p(near, fast)?"
                 options={[
                   { t: '0.10', ok: true, why: 'Row “near”, column “fast”: both at once.' },
@@ -592,6 +608,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'marginal',
       kicker: 'Scene 6',
       title: 'Forgetting a variable',
+      concept: 'Marginal density',
       steps: [
         {
           id: 's6.1',
@@ -636,6 +653,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 It has a scary name — the Chapman–Kolmogorov equation — but it's just a marginal.
               </Ahead>
               <Quiz
+                id="ch1-q6"
+                label="From the table: what is p(fast), whatever the position?"
                 q="From the table: what is p(fast), whatever the position?"
                 options={[
                   { t: '0.45', why: 'That’s only far & fast. Near & fast counts too.' },
@@ -653,6 +672,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'conditional',
       kicker: 'Scene 7',
       title: 'Learning something',
+      concept: 'Conditional pdf · independence',
       steps: [
         {
           id: 's7.1',
@@ -719,6 +739,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 <M>{'p(x\\mid y)'}</M> is not <M>{'p(y\\mid x)'}</M>. Here p(far | fast) = 0.82, but p(fast | far) = 0.45 / 0.60 = 0.75. Mixing them up is the most common mistake in all of probability — and fixing it is exactly what Bayes' rule is for.
               </Trap>
               <Quiz
+                id="ch1-q7"
+                label="From the table: what is p(slow | near)?"
                 q="From the table: what is p(slow | near)?"
                 options={[
                   { t: '0.30', why: 'That’s p(slow, near). You still have to divide by p(near) = 0.40.' },
@@ -736,6 +758,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'bayes',
       kicker: 'Scene 8',
       title: 'Bayes: the radar beeps',
+      concept: "Bayes' rule · likelihood",
       steps: [
         {
           id: 's8.1',
@@ -796,6 +819,14 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 <Knob label="Radar error σ" value={p.s8} min={3} max={40} step={1} onChange={set('s8')} fmt={(v) => v.toFixed(0)} unit=" m" />
               </Controls>
               <P>Play: a terrible radar (σ = 40 m) gives an almost flat red row, and the posterior stays close to the prior. A great radar (σ = 3 m) and the posterior jumps to the lamppost nearest the reading.</P>
+            </>
+          ),
+        },
+        {
+          id: 's8.5',
+          body: (
+            <>
+              <P>You've just done Bayes' rule by hand. Now let's see why it's true — it takes three moves, and you already know each one.</P>
               <Derive
                 steps={[
                   { tex: 'p(x, z) = p(x\\mid z)\\,p(z) \\quad\\text{and}\\quad p(x, z) = p(z\\mid x)\\,p(x)', why: 'Write the same joint two ways, using the conditional rule from Scene 7.' },
@@ -817,7 +848,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
           ),
         },
         {
-          id: 's8.5',
+          id: 's8.6',
           body: (
             <>
               <P>
@@ -831,6 +862,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
               <Rule>The posterior sits between what we expected and what the radar said — closer to whichever is surer — and it's narrower than both. Combining information always sharpens.</Rule>
               <Ahead>This is the filtering step of every tracker in the course. In Chapter 3, with bell curves, this multiply-and-stretch becomes three lines of algebra: the Kalman update.</Ahead>
               <Quiz
+                id="ch1-q8"
+                label="Why may we drop constant factors like 1/√(2πσ²) from the likelihood?"
                 q="Why may we drop constant factors like 1/√(2πσ²) from the likelihood?"
                 options={[
                   { t: 'Because they equal 1.', why: 'They don’t — but see the right answer.' },
@@ -848,6 +881,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'matrices',
       kicker: 'Scene 9',
       title: 'Matrices: machines that move space',
+      concept: 'Matrix · transpose · inverse · determinant',
       steps: [
         {
           id: 's9.1',
@@ -911,6 +945,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 <M>{'\\mathbf A\\mathbf X\\mathbf A^\\top'}</M> (moving a whole cloud — Scene 11).
               </Ahead>
               <Quiz
+                id="ch1-q9"
+                label="Stretch doubles every position and keeps speeds. What is its determinant?"
                 q="Stretch doubles every position and keeps speeds. What is its determinant?"
                 options={[
                   { t: '1', why: 'Area does change: a 1×1 square becomes 2×1.' },
@@ -928,6 +964,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'gaussian',
       kicker: 'Scene 10',
       title: 'The bell curve',
+      concept: 'Gaussian · Mahalanobis distance',
       steps: [
         {
           id: 's10.1',
@@ -1013,15 +1050,17 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
               />
               <P>In 1D this reduces exactly to the formula of two steps ago: P becomes σ², P⁻¹ becomes 1/σ², and the determinant becomes 2πσ².</P>
               <Controls>
-                <Knob label="σ position" value={p.sx} min={0.5} max={1.8} step={0.05} onChange={set('sx')} fmt={(v) => v.toFixed(2)} />
-                <Knob label="σ speed" value={p.sy} min={0.5} max={1.8} step={0.05} onChange={set('sy')} fmt={(v) => v.toFixed(2)} />
-                <Knob label="Correlation ρ" value={p.rho} min={-0.9} max={0.9} step={0.05} onChange={set('rho')} fmt={(v) => v.toFixed(2)} />
+                <Knob label="σ position" value={p.sx10} min={0.5} max={1.8} step={0.05} onChange={set('sx10')} fmt={(v) => v.toFixed(2)} />
+                <Knob label="σ speed" value={p.sy10} min={0.5} max={1.8} step={0.05} onChange={set('sy10')} fmt={(v) => v.toFixed(2)} />
+                <Knob label="Correlation ρ" value={p.rho10} min={-0.9} max={0.9} step={0.05} onChange={set('rho10')} fmt={(v) => v.toFixed(2)} />
               </Controls>
               <Ahead>
                 Bells have two magic properties: a bell pushed through a matrix machine stays a bell (next scene), and bell × bell is a bell (the “product formula”, Chapter 3). That's why the Kalman filter
                 can describe a whole cloud with just <M>{'\\bar{\\mathbf x}'}</M> and <M>{'\\mathbf P'}</M>, forever.
               </Ahead>
               <Quiz
+                id="ch1-q10"
+                label="What does a large off-diagonal entry in P mean?"
                 q="What does a large off-diagonal entry in P mean?"
                 options={[
                   { t: 'Both variables are very uncertain.', why: 'Each variable’s own uncertainty sits on the diagonal.' },
@@ -1039,6 +1078,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'drive',
       kicker: 'Scene 11',
       title: 'What driving does to a belief',
+      concept: 'Linear maps of Gaussians · AXAᵀ',
       steps: [
         {
           id: 's11.1',
@@ -1080,6 +1120,8 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 Chapter 3, Kalman prediction: <M>{'\\mathbf P_{k|k-1} = \\mathbf F\\,\\mathbf P_{k-1|k-1}\\mathbf F^\\top + \\mathbf D'}</M>. That's this scene with <M>{'\\mathbf A = \\mathbf F'}</M>, plus extra spread <M>{'\\mathbf D'}</M> because drivers don't hold a perfectly constant speed.
               </Ahead>
               <Quiz
+                id="ch1-q11"
+                label="1D: x has variance 4. What is the variance of y = 3x + 7?"
                 q="1D: x has variance 4. What is the variance of y = 3x + 7?"
                 options={[
                   { t: '12', why: 'Variance scales with the square of the factor.' },
@@ -1097,6 +1139,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'certainty',
       kicker: 'Scene 12',
       title: 'Lights on',
+      concept: 'Dirac delta',
       steps: [
         {
           id: 's12.1',
@@ -1125,6 +1168,7 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
       id: 'finale',
       kicker: 'Epilogue',
       title: 'What you now know',
+      concept: 'Summary · explain it back',
       steps: [
         {
           id: 's13.1',
@@ -1145,29 +1189,29 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <P>
-                <b>Explain it back.</b> An oral exam tests whether you can <i>say</i> it. For each question, answer out loud first, then open the model answer.
+                <b>Explain it back.</b> An oral exam tests whether you can <i>say</i> it. For each question, answer out loud first, then open the model answer and rate yourself honestly. Your ratings appear under <b>Revise</b> (top right), so you know what to look at again.
               </P>
-              <Ask q="1. What is a probability density, and how do you get a probability from it?">
+              <ExplainBack id="ch1-e1" q="1. What is a probability density, and how do you get a probability from it?">
                 <p>A non-negative function with total area 1 — “probability per unit”. Probabilities are areas: P(a &lt; x &lt; b) = ∫ₐᵇ p(x) dx. A single exact value has probability zero, and a density can be larger than 1.</p>
-              </Ask>
-              <Ask q="2. What is a marginal density, and where does it appear in tracking?">
+              </ExplainBack>
+              <ExplainBack id="ch1-e2" q="2. What is a marginal density, and where does it appear in tracking?">
                 <p>p(x) = ∫ p(x, y) dy: add up over the variable you don't care about. It's the prediction step (integrate out the old state) and the denominator in Bayes' rule.</p>
-              </Ask>
-              <Ask q="3. Explain a conditional density with a table and with a picture.">
+              </ExplainBack>
+              <ExplainBack id="ch1-e3" q="3. Explain a conditional density with a table and with a picture.">
                 <p>Keep only the part of the joint that matches what you learned, then rescale it to sum to 1: p(x|y) = p(x, y)/p(y). In the picture: slice the landscape, then stretch the slice to area 1.</p>
-              </Ask>
-              <Ask q="4. Derive Bayes' rule and name each term.">
+              </ExplainBack>
+              <ExplainBack id="ch1-e4" q="4. Derive Bayes' rule and name each term.">
                 <p>p(x, z) = p(x|z)p(z) = p(z|x)p(x), so p(x|z) = p(z|x)p(x)/∫p(z|x)p(x)dx. Prior p(x), likelihood p(z|x) (the sensor model), posterior p(x|z), normalisation in the denominator (independent of x).</p>
-              </Ask>
-              <Ask q="5. What do x̄ and P mean in 𝒩(x; x̄, P), and why is the Mahalanobis distance better than a ruler?">
+              </ExplainBack>
+              <ExplainBack id="ch1-e5" q="5. What do x̄ and P mean in 𝒩(x; x̄, P), and why is the Mahalanobis distance better than a ruler?">
                 <p>x̄ is the mean (where the hill's top is); P the covariance (width and tilt; variances on the diagonal). The Mahalanobis distance measures misses in units of σ, direction by direction, so a 30 m miss along an accurate direction counts as much more surprising than 30 m along an inaccurate one.</p>
-              </Ask>
-              <Ask q="6. What happens to a Gaussian under a linear map? Give the tracking example.">
+              </ExplainBack>
+              <ExplainBack id="ch1-e6" q="6. What happens to a Gaussian under a linear map? Give the tracking example.">
                 <p>It stays Gaussian: mean A x̄ + a, covariance A X Aᵀ. Driving for Δt with A = [[1, Δt], [0, 1]] shears the (position, speed) ellipse and makes the position less certain — the Kalman prediction.</p>
-              </Ask>
-              <Ask q="7. Why is the mean used as the estimate, and when is it misleading?">
+              </ExplainBack>
+              <ExplainBack id="ch1-e7" q="7. Why is the mean used as the estimate, and when is it misleading?">
                 <p>It minimises the mean squared error (MMSE). It misleads when the belief has several bumps: it can land between them where the object never is — the reason PDAF “loses multimodality”.</p>
-              </Ask>
+              </ExplainBack>
               <P>Next: Chapter 2 sets this belief in motion — predict, measure, repeat.</P>
             </>
           ),
@@ -1176,5 +1220,5 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
     },
   ];
 
-  return <StoryShell chapterLabel="Chapter 1" title="The car in the dark" scenes={scenes} onHome={onHome} renderWorld={(step, hl) => <World1 step={step} hl={hl} p={p} />} />;
+  return <StoryShell chapterId="ch1" chapterLabel="Chapter 1" title="The car in the dark" scenes={scenes} onHome={onHome} renderWorld={(step, hl, nonce) => <World1 step={step} hl={hl} p={p} nonce={nonce} />} />;
 }

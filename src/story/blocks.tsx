@@ -1,6 +1,7 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useContext, useEffect, useState } from 'react';
 import { Tex } from '../ui/Tex';
-import { useHighlight } from './StoryShell';
+import { progress, useProgress } from './progress';
+import { StepCtx, useHighlight, useRegister } from './StoryShell';
 
 /** Prose building blocks for story chapters. Minimal: a label, a thin rule, generous space. */
 
@@ -38,6 +39,7 @@ export const Rule = ({ children }: { children: ReactNode }) => (
  */
 export function Formula({ tex, rows, note }: { tex: string; rows?: [string, ReactNode, string?][]; note?: ReactNode }) {
   const { hl, setHl } = useHighlight();
+  const linked = rows?.some((r) => r[2]);
   return (
     <div className="sx-block sx-formula">
       <div className="sx-formula-tex">
@@ -51,6 +53,9 @@ export function Formula({ tex, rows, note }: { tex: string; rows?: [string, Reac
               className={`sx-sym ${key ? 'has-key' : ''} ${key && hl === key ? 'on' : ''}`}
               onMouseEnter={() => key && setHl(key)}
               onMouseLeave={() => key && setHl(null)}
+              onFocus={() => key && setHl(key)}
+              onBlur={() => key && setHl(null)}
+              tabIndex={key ? 0 : undefined}
             >
               <dt>
                 <Tex tex={s} />
@@ -60,6 +65,7 @@ export function Formula({ tex, rows, note }: { tex: string; rows?: [string, Reac
           ))}
         </dl>
       )}
+      {linked && <div className="sx-formula-hint">Point at (or Tab to) a row marked ◎ and its object lights up in the 3D scene.</div>}
       {note && <div className="sx-formula-note">{note}</div>}
     </div>
   );
@@ -92,21 +98,79 @@ export const Trap = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-export function Quiz({ q, options }: { q: ReactNode; options: { t: ReactNode; ok?: boolean; why: ReactNode }[] }) {
+export function Quiz({ id, label, q, options }: { id: string; label: string; q: ReactNode; options: { t: ReactNode; ok?: boolean; why: ReactNode }[] }) {
   const [pick, setPick] = useState<number | null>(null);
+  const step = useContext(StepCtx);
+  const register = useRegister();
+  const p = useProgress();
+  useEffect(() => register({ id, kind: 'quiz', label, step }), [id, label, step, register]);
+  const past = p.quiz[id];
   return (
     <div className="sx-block sx-quiz">
       <div className="sx-label">Check yourself</div>
       <div className="sx-quiz-q">{q}</div>
       <div className="sx-quiz-opts">
         {options.map((o, i) => (
-          <button key={i} className={`sx-opt ${pick === i ? (o.ok ? 'ok' : 'bad') : ''} ${pick !== null && o.ok ? 'is-answer' : ''}`} onClick={() => setPick(i)}>
+          <button
+            key={i}
+            className={`sx-opt ${pick === i ? (o.ok ? 'ok' : 'bad') : ''} ${pick !== null && o.ok ? 'is-answer' : ''}`}
+            aria-pressed={pick === i}
+            onClick={() => {
+              setPick(i);
+              progress.recordQuiz(id, !!o.ok);
+            }}
+          >
             <span className="sx-opt-letter">{String.fromCharCode(65 + i)}</span>
             <span>{o.t}</span>
           </button>
         ))}
       </div>
-      {pick !== null && <div className={`sx-quiz-why ${options[pick].ok ? 'ok' : 'bad'}`}>{options[pick].why}</div>}
+      {pick !== null && (
+        <div className={`sx-quiz-why ${options[pick].ok ? 'ok' : 'bad'}`} role="status">
+          {options[pick].why}
+        </div>
+      )}
+      {pick === null && past && <div className="sx-quiz-past">Last time: {past === 'first-try' ? 'right on the first try' : 'missed on the first try'}. Answer again any time.</div>}
+    </div>
+  );
+}
+
+/**
+ * Explain-it-back: answer OUT LOUD first, then open the model answer, then rate yourself honestly.
+ * The rating only feeds the Revise panel — it is information for you, not a score.
+ */
+export function ExplainBack({ id, q, children }: { id: string; q: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const step = useContext(StepCtx);
+  const register = useRegister();
+  const p = useProgress();
+  useEffect(() => register({ id, kind: 'explain', label: q, step }), [id, q, step, register]);
+  const r = p.explain[id];
+  return (
+    <div className="sx-block sx-ask sx-explain">
+      <div className="sx-label">Explain it back — out loud first</div>
+      <div className="sx-ask-q">{q}</div>
+      {open ? (
+        <>
+          <div className="sx-reveal">{children}</div>
+          <div className="sx-rate">
+            <span>Could you have said that without looking?</span>
+            <button className={`sx-btn ${r === 'yes' ? 'sx-btn-ok' : ''}`} aria-pressed={r === 'yes'} onClick={() => progress.rateExplain(id, 'yes')}>
+              Yes
+            </button>
+            <button className={`sx-btn ${r === 'not-yet' ? 'sx-btn-todo' : ''}`} aria-pressed={r === 'not-yet'} onClick={() => progress.rateExplain(id, 'not-yet')}>
+              Not yet
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="sx-rate">
+          <button className="sx-btn" onClick={() => setOpen(true)}>
+            I said my answer. Show the model answer.
+          </button>
+          {r && <span className="sx-muted">Last time: {r === 'yes' ? 'you could explain it' : 'not yet'}</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -129,7 +193,7 @@ export function Toggle({ options, value, onChange }: { options: string[]; value:
   return (
     <div className="sx-toggle" role="tablist">
       {options.map((o, i) => (
-        <button key={o} className={i === value ? 'on' : ''} onClick={() => onChange(i)}>
+        <button key={o} className={i === value ? 'on' : ''} aria-pressed={i === value} onClick={() => onChange(i)}>
           {o}
         </button>
       ))}

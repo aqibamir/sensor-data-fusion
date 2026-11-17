@@ -26,6 +26,9 @@ export interface Params {
   drive: number;
   dt: number;
   dsig: number;
+  sx10: number;
+  sy10: number;
+  rho10: number;
 }
 
 export const DEFAULTS: Params = {
@@ -55,4 +58,7 @@ export const DEFAULTS: Params = {
   drive: 0,
   dt: 1,
   dsig: 5,
+  sx10: 1.1,
+  sy10: 0.9,
+  rho10: 0.6,
 };

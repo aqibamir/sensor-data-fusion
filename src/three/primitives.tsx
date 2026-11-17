@@ -31,7 +31,7 @@ export function useAnimated(target: number, speed = 4): number {
 }
 
 /** Orbit controls + a camera that glides to a new viewpoint whenever `position` changes. */
-export function Camera({ position, target = [0, 0, 0] }: { position: P3; target?: P3 }) {
+export function Camera({ position, target = [0, 0, 0], nonce = 0 }: { position: P3; target?: P3; nonce?: number }) {
   const { camera, size } = useThree();
   const controls = useRef<any>(null);
   // Scenes are composed for a ~16:10 stage; on taller stages pull the camera back so nothing is cropped.
@@ -42,7 +42,7 @@ export function Camera({ position, target = [0, 0, 0] }: { position: P3; target?
     return new THREE.Vector3(...position).sub(t).multiplyScalar(pull).add(t);
   };
   const goal = useRef({ pos: goalPos(), tgt: new THREE.Vector3(...target), t: 0 });
-  const key = position.join(',') + '|' + target.join(',') + '|' + pull.toFixed(2);
+  const key = position.join(',') + '|' + target.join(',') + '|' + pull.toFixed(2) + '|' + nonce;
   useEffect(() => {
     goal.current = { pos: goalPos(), tgt: new THREE.Vector3(...target), t: 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
