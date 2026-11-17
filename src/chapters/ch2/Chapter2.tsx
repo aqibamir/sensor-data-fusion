@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { moments } from '../../engine/grid';
 import { Ahead, Ask, Controls, Derive, Example, Formula, InOtherWords, Knob, Lead, M, P, Q, Quiz, Readout, Rule, Table, Toggle, Trap } from '../../story/blocks';
 import { Scene, StoryShell } from '../../story/StoryShell';
+import { Tex } from '../../ui/Tex';
 import { DEFAULTS2, filterCells, G2, HOURS, Params2, PREV_ONE, predictCells, sail } from './model';
 import { EXPLAIN2 } from './Practice2';
 import { World2 } from './World2';
@@ -259,7 +260,7 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
           id: 's3.1',
           body: (
             <>
-              <P>Now the real situation: we <i>don't</i> know exactly where the ship is. We only have a belief. Cut the lane into 10-nm cells. Our belief right now (blue-ish columns, at the back):</P>
+              <P>Now the real situation: we <i>don't</i> know exactly where the ship is. We only have a belief. Cut the lane into 10-nm cells. Our belief right now (the columns at the back, one colour per cell):</P>
               <Table head={['cell', '10 nm', '20 nm', '30 nm']} rows={[['p(now)', '0.2', '0.6', '0.2']]} />
               <P>
                 In one hour the ship moves <b>+1 cell (25 %)</b>, <b>+2 cells (50 %)</b> or <b>+3 cells (25 %)</b>. Here's the trick: for each cell next hour, ask <b>“from where could it have come, and how likely was each route?”</b> — then add the routes.
@@ -317,6 +318,48 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
                 Prediction doesn't care: it moves <b>both</b> bumps forward and widens each. It never decides between them — only a measurement can. Hold on to that; it's the reason MHT exists (Chapter 8).
               </P>
               <Ahead>This sum over old cells is exactly Chapter 1's <b>marginal</b>: we add up the joint p(new, old) over the old position we no longer care about.</Ahead>
+            </>
+          ),
+        },
+        {
+          id: 's3.3',
+          body: (
+            <>
+              <P>Step back and write down <b>every route at once</b>. One row per new cell, one column per old cell, and in each box the chance of that move. That's the dynamics model as a table — a <b>transition matrix</b> <M>{'\\mathbf T'}</M>:</P>
+              <Table
+                head={['new ↓ / old →', '10', '20', '30']}
+                rows={[
+                  ['20 nm', '0.25', '0', '0'],
+                  ['30 nm', '0.50', '0.25', '0'],
+                  ['40 nm', '0.25', '0.50', '0.25'],
+                  ['50 nm', '0', '0.25', '0.50'],
+                  ['60 nm', '0', '0', '0.25'],
+                ]}
+              />
+              <P>
+                Each <b>column adds up to 1</b>: wherever the ship was, it has to go <i>somewhere</i>. And the prediction is just Chapter 1's matrix machine — row times column:
+              </P>
+              <Formula
+                tex="\begin{pmatrix} p(20)\\ p(30)\\ p(40)\\ p(50)\\ p(60)\end{pmatrix} = \begin{pmatrix} .25&0&0\\ .5&.25&0\\ .25&.5&.25\\ 0&.25&.5\\ 0&0&.25\end{pmatrix}\begin{pmatrix} 0.2\\ 0.6\\ 0.2\end{pmatrix} = \begin{pmatrix} 0.05\\ 0.25\\ 0.40\\ 0.25\\ 0.05\end{pmatrix}"
+                rows={[
+                  ['\\mathbf T_{ji}', 'chance of moving from old cell i to new cell j: p(xₖ = j | xₖ₋₁ = i)'],
+                  ['\\mathbf T\\,\\mathbf p', 'row j of T times the old belief = “add up every route into j”'],
+                ]}
+              />
+              <InOtherWords>Prediction with a table is one matrix–vector product. Chapman–Kolmogorov is the same product with infinitely many rows and columns.</InOtherWords>
+              <Ahead>
+                Remember this table. In Chapter 9 (IMM) the lecture draws exactly such a matrix for <i>switching between motion models</i> (M1, M2, M3 with P(i | j), each column summing to 1). Same idea, different state.
+              </Ahead>
+              <Quiz
+                id="ch2-q8"
+                label="Why must each column of the transition table add up to 1?"
+                q="Why must every column of the transition table add up to 1?"
+                options={[
+                  { t: 'Because the belief must add up to 1.', why: 'Close — but the reason is per column: it’s about one starting cell.' },
+                  { t: 'Because from any starting cell, the ship must end up somewhere.', ok: true, why: 'Column i lists all the places a ship starting in cell i can go. Those chances must total 1 — and that’s exactly why the prediction still adds up to 1.' },
+                  { t: 'Because the rows are symmetric.', why: 'Rows don’t have to add up to anything special.' },
+                ]}
+              />
             </>
           ),
         },
@@ -495,6 +538,25 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
             <>
               <P>Watch the columns merge into the <Q c="post">filtered</Q> belief. Compare its width to the prediction's: narrower. A sighting is the only thing that ever shrinks the belief.</P>
               <Rule>Prediction widens, filtering narrows. That push and pull is the heartbeat of every tracker.</Rule>
+              <P>
+                How much narrower, exactly? For bell-shaped beliefs there's a rule so beautiful it's worth seeing now (Chapter 3 derives it properly). Prediction <b>adds variances</b>. Filtering <b>adds the inverse</b> — <i>1/variance</i>, which statisticians call <b>information</b> or precision:
+              </P>
+              <Formula
+                tex="\underbrace{P_{\text{pred}} = P + q}_{\text{prediction: uncertainties add}} \qquad \underbrace{\frac{1}{P_{\text{filt}}} = \frac{1}{P_{\text{pred}}} + \frac{1}{R}}_{\text{filtering: information adds}}"
+                rows={[
+                  ['P + q', 'one hour of sailing adds its randomness'],
+                  ['1/P', 'how much we know (big when the belief is narrow)'],
+                  ['1/R', 'how much the sighting knows'],
+                ]}
+              />
+              <Example>
+                <p>Belief σ = 2 nm (P = 4). One hour of sailing, q = 9: P_pred = 13. Then a sighting with σ = 3 nm (R = 9):</p>
+                <Tex tex="\frac{1}{P_{\text{filt}}} = \frac{1}{13} + \frac{1}{9} = 0.188 \;\Rightarrow\; P_{\text{filt}} = 5.32\ \text{nm}^2,\ \ \sigma \approx 2.3\ \text{nm}" block />
+                <p>
+                  The filtered belief is narrower than <b>both</b> the prediction (σ 3.6) and the sighting (σ 3). Two independent pieces of evidence always beat either one alone. And the new mean is a weighted average, each source weighted by its information: <M>{'\\bar x_{\\text{filt}} = P_{\\text{filt}}\\big(\\bar x_{\\text{pred}}/P_{\\text{pred}} + z/R\\big)'}</M>.
+                </p>
+              </Example>
+              <Ahead>Chapter 3 calls this the Kalman update, and Chapter 5 uses the very same “add the information” rule to fuse several sensors.</Ahead>
             </>
           ),
         },
@@ -530,6 +592,9 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <InOtherWords>New belief ∝ (today's evidence) × (yesterday's belief, sailed forward one hour).</InOtherWords>
+              <Trap>
+                Words that confuse people: “<b>filtering</b>” here has nothing to do with audio filters — it means “estimating the present from data up to the present”. Other books call retrodiction <b>smoothing</b>, and the whole loop a <b>Bayes filter</b> or recursive Bayesian estimation. Same ideas, different names.
+              </Trap>
               <P>On the stage, Chapter 1's landscape picture, now with time stamps: the joint of prediction and sighting, sliced at the sighting we actually got, then rescaled.</P>
               <Controls>
                 <Knob label="Sighting" value={p.fz} min={-3} max={3} step={0.05} onChange={set('fz')} fmt={(x) => x.toFixed(2)} />
@@ -584,7 +649,34 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
                 The light at {p.ez} nm is {(Math.abs(p.ez - 40) / 5).toFixed(1)} σ from where we expected it.{' '}
                 {Math.abs(p.ez - 40) / 5 > 3 ? 'That almost never happens by chance.' : 'Nothing unusual.'}
               </Readout>
-              <Ahead>In the Gaussian case (Chapter 3): p(zₖ | 𝒵ᵏ⁻¹) = 𝒩(zₖ; H x_{'{k|k−1}'}, S) with S = H P Hᵀ + R — the innovation covariance. Here H = 1, so S = P + R.</Ahead>
+              <P>
+                The surprise has a name you'll hear in every remaining chapter: the <b>innovation</b> — what the sighting told us that we didn't already expect.
+              </P>
+              <Formula
+                tex="\begin{gathered} \nu_k = z_k - \hat z_k, \qquad \hat z_k = \mathbb E[z_k\mid\mathcal Z^{k-1}] \\ \nu_k \sim \mathcal N(0,\,S), \qquad S = P_{\text{pred}} + R \end{gathered}"
+                rows={[
+                  ['\\nu_k', 'the innovation (Greek “nu”): the sighting minus where we expected it'],
+                  ['\\hat z_k', 'the expected sighting (here: the predicted position, 40 nm)'],
+                  ['S', 'the innovation variance: how big innovations normally are'],
+                  ['\\nu_k/\\sqrt S', 'the surprise in σ’s — the readout above'],
+                ]}
+              />
+              <P>
+                If our models are right, innovations are “white”: centred on zero, about ±√S in size, and unrelated from hour to hour. Innovations that are consistently too big, or always on one side, are a warning that the model is wrong (the ship is turning, or the sighting is biased).
+              </P>
+              <Ahead>
+                In the Gaussian case (Chapter 3): p(zₖ | 𝒵ᵏ⁻¹) = 𝒩(zₖ; H x_{'{k|k−1}'}, S) with S = H P Hᵀ + R — the innovation covariance. Here H = 1, so S = P + R. Chapter 6 squares the innovation in units of S (the Mahalanobis distance) to build the gate; Chapter 9 uses the value of p(zₖ | 𝒵ᵏ⁻¹) to judge which motion model fits best.
+              </Ahead>
+              <Quiz
+                id="ch2-q9"
+                label="Innovation in σ"
+                q="Prediction: 40 nm with P = 16. Sighting variance R = 9. The sighting says 50 nm. How big is the innovation, in σ's?"
+                options={[
+                  { t: '10 σ', why: '10 nm is the innovation in miles. Divide by √S.' },
+                  { t: '2 σ', ok: true, why: 'ν = 50 − 40 = 10 nm, S = 16 + 9 = 25, √S = 5, so 10 / 5 = 2σ. Unusual, not alarming.' },
+                  { t: '2.5 σ', why: 'That divides by √16 = 4 — but the sighting error adds to the spread: use S = P + R.' },
+                ]}
+              />
             </>
           ),
         },
@@ -650,6 +742,29 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
               <P>
                 Step through and watch the readout. The width swings up (predict) and down (filter) and soon settles: the belief reaches a <b>steady width</b> where each hour's spreading exactly balances each sighting's sharpening. Make the sea rougher (q up) or the sightings worse (R up) and the balance settles wider.
               </P>
+              <P>Where exactly does it settle? Use the two rules from Scene 6. In the steady state the filtered variance P comes out the same every hour:</P>
+              <Derive
+                steps={[
+                  { tex: 'P_{\\text{pred}} = P + q, \\qquad \\frac{1}{P} = \\frac{1}{P + q} + \\frac{1}{R}', why: 'One hour of the loop: predict (add q), then filter (add the information 1/R). Steady state: we end where we started.' },
+                  { tex: 'P\\,(P + q) = R\\,(P + q) - R\\,P \\;\\Longrightarrow\\; P^2 + q\\,P - q\\,R = 0', why: 'Multiply both sides by P(P + q)R and tidy up: a quadratic equation in P.' },
+                  { tex: 'P = \\frac{-q + \\sqrt{q^2 + 4qR}}{2}', why: 'Take the positive root (a variance can’t be negative).' },
+                ]}
+              />
+              <Readout>
+                With q = {p.qv} and R = {p.r}: steady filtered variance P = {((-p.qv + Math.sqrt(p.qv * p.qv + 4 * p.qv * p.r)) / 2).toFixed(2)} nm² (σ = {Math.sqrt((-p.qv + Math.sqrt(p.qv * p.qv + 4 * p.qv * p.r)) / 2).toFixed(2)} nm). Step to hour 10 and compare with the readout above — the voyage really settles there.
+              </Readout>
+              <H3>Three practical details</H3>
+              <ul>
+                <li>
+                  <b>An hour with no sighting</b> (fog again)? Skip filtering: the prediction <i>is</i> the new belief, p(xₖ | 𝒵ᵏ) = p(xₖ | 𝒵ᵏ⁻¹). The loop never breaks — it just stops narrowing until the next light.
+                </li>
+                <li>
+                  <b>What does the navigator report?</b> One position and an error bar: the mean of the belief (the MMSE estimate from Chapter 1) and its σ. The full curve stays behind the scenes.
+                </li>
+                <li>
+                  <b>Why a loop at all?</b> You could recompute the belief from the whole logbook every hour — but that gets slower every hour. Thanks to the Markov property, the loop only ever carries <i>one</i> belief forward: constant memory and constant work per hour, forever. That's why trackers can run for days on small computers.
+                </li>
+              </ul>
               <Rule>Predict (wider) → sight → filter (narrower) → predict … Every tracker in the course is this loop.</Rule>
             </>
           ),
@@ -687,6 +802,19 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <InOtherWords>Retrodiction = the filtered belief at hour l, corrected by how much the later logbook changed our view of hour l+1.</InOtherWords>
+              <Example title="The inquiry, worked by hand">
+                <p>
+                  Two channels, <b>west</b> and <b>east</b>. At hour 0 the navigator says 50/50. Each hour a ship stays in its channel with probability 0.9. At hour 1 a sighting: likelihood west 0.25, east 0.75.
+                </p>
+                <ol>
+                  <li>Forward, hour 1: prediction 50/50 (by symmetry) → × likelihood, rescale → <b>west 0.25, east 0.75</b>.</li>
+                  <li>
+                    Backwards: <i>if</i> the ship is east at hour 1, how likely was it east at hour 0? Bayes: 0.9 × 0.5 / 0.5 = <b>0.9</b>. If it's west at hour 1: <b>0.1</b>.
+                  </li>
+                  <li>Average over what we now believe about hour 1: p(east₀ | 𝒵¹) = 0.9 × 0.75 + 0.1 × 0.25 = <b>0.70</b>.</li>
+                </ol>
+                <p>The navigator at hour 0 said 50 %. The inquiry, one sighting later, says 70 % east. That's the four-move formula with two cells instead of infinitely many.</p>
+              </Example>
             </>
           ),
         },
