@@ -20,5 +20,5 @@ npm test         # math-engine tests
 ## Status
 
 - [x] Ch 1 "The car in the dark" — scrollytelling chapter: 3D night-road world (`src/chapters/ch1/`), screenplay + audit in `docs/scripts/`
-- [ ] Ch 2 — to be rebuilt in the new format (old paged version in `src/chapters/Ch2Recursion.tsx`)
+- [x] Ch 2 "The ship in the fog" — Bayesian recursion: story (`src/chapters/ch2/`), practice, deep-dive slot; screenplay in `docs/scripts/ch2-script.md`
 - [ ] Ch 3–10

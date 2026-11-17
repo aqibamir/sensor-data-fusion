@@ -334,3 +334,8 @@ kbd { font: 600 12px var(--sans); border: 1px solid #cbd5e1; border-bottom-width
 .hx-parts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .hx-parts span { font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: #f4f4f5; color: var(--ink-2); }
 .hx-parts .hx-muted { color: var(--faint); }
+
+/* sea world labels */
+.w-log { font: 12.5px var(--sans); color: #e2e8f0; background: rgba(30, 24, 16, 0.92); border: 1px solid rgba(217, 180, 120, 0.5); border-radius: 8px; padding: 8px 12px; min-width: 210px; }
+.w-log-title { font: italic 600 14px var(--serif); color: #fcd34d; margin-bottom: 4px; }
+.w-log-row { padding: 2px 0; border-top: 1px dashed rgba(217, 180, 120, 0.25); white-space: nowrap; }
