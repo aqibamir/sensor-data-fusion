@@ -29,3 +29,11 @@ npm test         # math-engine tests
 ## Credits
 
 Road models and textures in `public/road/` — Quaternius and ambientCG (CC0). Space textures in `public/space/` — three.js examples (MIT), derived from NASA imagery. Night skies in `public/hdri/` — Poly Haven (CC0).
+
+### Copyright and course materials
+
+- **No course materials are included.** The lecture slides (Koch / Gehlen, Fraunhofer FKIE, Uni Bonn) and the book (W. Koch, *Tracking and Sensor Data Fusion*, Springer 2014) are not part of this repository. All explanations, stories, figures and exercises are original; formulas are standard mathematics.
+- Short attributed quotations from the lectures and the book (a sentence at most) appear for study purposes only.
+- Every third-party asset is listed with its licence in the `CREDITS.md` next to it (`public/road/`, `public/sea/`, `public/space/`, `public/hdri/`): CC0 (Quaternius, Kenney, ambientCG, Poly Haven), MIT (three.js example textures), and NASA content (not copyrighted; credit NASA, no endorsement implied).
+- Historical names (Berlin Airlift, GCA, Apollo, Osborne Firefinder, Admiral Shovell) are used descriptively.
+
