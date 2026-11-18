@@ -22,7 +22,9 @@ npm test         # math-engine tests
 - [x] Ch 1 "The car in the dark" — scrollytelling chapter: 3D night-road world (`src/chapters/ch1/`), screenplay + audit in `docs/scripts/`
 - [x] Ch 2 "The ship in the fog" — Bayesian recursion: story (`src/chapters/ch2/`), practice, deep-dive slot; screenplay in `docs/scripts/ch2-script.md`
 - [x] Ch 3 "Bringing them home" — Kalman filter (`src/chapters/ch3/`), practice, deep-dive slot; screenplay in `docs/scripts/ch3-script.md`
-- [ ] Ch 0, Ch 4–10 (screenplays ready for Ch 0, 4, 5)
+- [x] Ch 4 "Landing blind" — EKF/UKF (`src/chapters/ch4/`)
+- [x] Ch 5 "Smoke on the ridge" — sensor fusion (`src/chapters/ch5/`)
+- [ ] Ch 0, Ch 6–10 (Ch 0 screenplay ready)
 
 ## Credits
 
