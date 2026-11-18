@@ -18,14 +18,21 @@ import { DEFAULTS, Params } from './params';
 function useT(key: string, stopAfter = Infinity) {
   const [t, setT] = useState(0);
   const start = useRef<number | null>(null);
+  const last = useRef(-1);
   useEffect(() => {
     start.current = null;
+    last.current = -1;
     setT(0);
   }, [key]);
   useFrame(({ clock }) => {
     if (start.current === null) start.current = clock.elapsedTime;
     const v = clock.elapsedTime - start.current;
-    if (v <= stopAfter + 0.05) setT(v);
+    // React re-render at most 30×/s (was every frame); animations stay smooth, CPU drops a lot
+    const q = Math.round(v * 30) / 30;
+    if (q !== last.current && v <= stopAfter + 0.05) {
+      last.current = q;
+      setT(q);
+    }
   });
   return t;
 }

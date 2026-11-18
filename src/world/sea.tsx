@@ -303,7 +303,6 @@ function ModelShip({ position = [0, 0, 0], opacity = 1, scale = 1, lantern = tru
               <sphereGeometry args={[0.03, 12, 12]} />
               <meshBasicMaterial color={[4, 3, 1.2]} toneMapped={false} transparent opacity={opacity} />
             </mesh>
-            <pointLight position={[-0.5, 0.3, 0]} intensity={0.8 * opacity} distance={1.6} color="#FFD27A" />
           </>
         )}
       </group>

@@ -10,15 +10,15 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  * Quality tiers: 'high' (AO + bloom + grain + MSAA) → 'low' (bloom only) when the frame rate drops.
  * Glow rule: only things with emissive / colour above 1.0 (toneMapped={false}) bloom, i.e. the maths objects and lights.
  */
-export function StudioFX({ bloom = 0.7, ao = true, vignette = 0.55 }: { bloom?: number; ao?: boolean; vignette?: number }) {
+export function StudioFX({ bloom = 0.7, ao = false, vignette = 0.55 }: { bloom?: number; ao?: boolean; vignette?: number }) {
   const [tier, setTier] = useState<'high' | 'low'>('high');
   const high = tier === 'high';
   return (
     <>
       <PerformanceMonitor onDecline={() => setTier('low')} onFallback={() => setTier('low')} flipflops={2} />
-      <EffectComposer multisampling={high ? 4 : 0} enableNormalPass={false}>
+      <EffectComposer multisampling={0} enableNormalPass={false} resolutionScale={1}>
         {high && ao ? <N8AO halfRes aoRadius={0.6} intensity={1.6} distanceFalloff={0.6} /> : <></>}
-        <Bloom mipmapBlur intensity={bloom} luminanceThreshold={0.9} luminanceSmoothing={0.25} radius={0.7} />
+        <Bloom mipmapBlur intensity={bloom} luminanceThreshold={0.9} luminanceSmoothing={0.25} radius={0.7} resolutionScale={0.5} />
         <ToneMapping mode={ToneMappingMode.AGX} />
         <Vignette offset={0.3} darkness={vignette} />
         {high ? <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.35} /> : <></>}

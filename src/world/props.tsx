@@ -1,4 +1,4 @@
-import { ContactShadows, Html, RoundedBox, Stars, useGLTF, useTexture } from '@react-three/drei';
+import { Html, RoundedBox, Stars, useGLTF, useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, Suspense, useMemo, useRef } from 'react';
 import { lookSky, SkyLook } from './look';
@@ -48,7 +48,6 @@ export function Environment() {
       </Suspense>
       <TreeLine z={-16} from={-40} to={50} gap={0.9} seed={3} scale={1.1} color="#18223A" />
       <TreeLine z={-22} from={-46} to={56} gap={0.8} seed={8} scale={1.5} color="#1A2440" />
-      <ContactShadows position={[0, 0.004, 0]} scale={[60, 12]} resolution={1024} blur={2.2} opacity={0.75} far={2} frames={Infinity} color="#000000" />
       <StudioFX />
     </>
   );
@@ -332,6 +331,7 @@ function ModelCar({ position = [0, 0, 0], opacity = 1, lights = true, spin = 0, 
   return (
     <group position={position}>
       <primitive object={root} scale={k} rotation={[0, Math.PI / 2, 0]} />
+      <BlobShadow w={1.05 * scale} d={0.5 * scale} opacity={0.55 * opacity} />
       {lights && opacity > 0.5 && (
         <group scale={scale}>
           <Headlight />
@@ -341,6 +341,28 @@ function ModelCar({ position = [0, 0, 0], opacity = 1, lights = true, spin = 0, 
   );
 }
 useGLTF.preload(CAR_FILES.car);
+
+/** Cheap soft shadow: one textured quad (replaces a per-frame shadow render). */
+let blobTex: THREE.Texture | null = null;
+function BlobShadow({ w, d, opacity }: { w: number; d: number; opacity: number }) {
+  if (!blobTex) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(0,0,0,1)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 64, 64);
+    blobTex = new THREE.CanvasTexture(c);
+  }
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
+      <planeGeometry args={[w, d]} />
+      <meshBasicMaterial map={blobTex} transparent opacity={opacity} depthWrite={false} />
+    </mesh>
+  );
+}
 
 /** A real light pool on the road in front of the car. */
 function Headlight() {
@@ -547,14 +569,15 @@ export function Column({ x, z = 0, h, color, w = 0.5, opacity = 0.92, label }: {
   );
 }
 
+const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
+
 /** A glowing data bar standing on y = 0: gradient body, bright rim, crisp bright edges. */
 export function DataBox({ w, h, d, color, opacity = 0.9 }: { w: number; h: number; d: number; color: string; opacity?: number }) {
   const hh = Math.max(h, 0.0005);
   const edge = useMemo(() => new THREE.Color(color).lerp(new THREE.Color('#FFFFFF'), 0.35).multiplyScalar(1.8), [color]);
   return (
-    <mesh position={[0, hh / 2, 0]}>
-      <boxGeometry args={[w, hh, d]} />
-      <DataMaterial color={color} opacity={opacity * 0.8} height={hh} base={-hh / 2} rim={1.1} />
+    <mesh position={[0, hh / 2, 0]} scale={[w, hh, d]} geometry={UNIT_BOX}>
+      <DataMaterial color={color} opacity={opacity * 0.8} height={1} base={-0.5} rim={1.1} />
       <Edges threshold={15}>
         <lineBasicMaterial color={edge} toneMapped={false} transparent opacity={opacity} />
       </Edges>

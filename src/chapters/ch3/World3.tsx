@@ -18,13 +18,21 @@ function Shot({ pos, tgt }: { pos: P3; tgt: P3 }) {
 function useT(key: string) {
   const [t, setT] = useState(0);
   const start = useRef<number | null>(null);
+  const last = useRef(-1);
   useEffect(() => {
     start.current = null;
+    last.current = -1;
     setT(0);
   }, [key]);
   useFrame(({ clock }) => {
     if (start.current === null) start.current = clock.elapsedTime;
-    setT(clock.elapsedTime - start.current);
+    const v = clock.elapsedTime - start.current;
+    // React re-render at most 30×/s (was every frame); animations stay smooth, CPU drops a lot
+    const q = Math.round(v * 30) / 30;
+    if (q !== last.current && true) {
+      last.current = q;
+      setT(q);
+    }
   });
   return t;
 }

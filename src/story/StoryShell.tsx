@@ -297,7 +297,7 @@ export function StoryShell({
             <div className="sx-stage">
               {gl ? (
                 <StageBoundary fallback={stageFallback}>
-                  <Canvas camera={{ position: [-6, 2.5, 7], fov: 40 }} dpr={[1, 2]} aria-label={`3D scene: ${scene.title}`} role="img">
+                  <Canvas camera={{ position: [-6, 2.5, 7], fov: 40 }} dpr={[1, 1.5]} gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }} aria-label={`3D scene: ${scene.title}`} role="img">
                     <Suspense fallback={null}>{renderWorld(active, hl, camNonce)}</Suspense>
                   </Canvas>
                 </StageBoundary>

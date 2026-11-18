@@ -165,9 +165,8 @@
   position: relative; transform: translateY(-22px);
   display: inline-flex; align-items: center; gap: 7px;
   font: 500 12.5px/1.25 var(--sans); letter-spacing: 0.005em; color: #f1f5f9; font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, rgba(23, 30, 46, 0.78), rgba(12, 17, 28, 0.82));
+  background: linear-gradient(180deg, rgba(23, 30, 46, 0.9), rgba(12, 17, 28, 0.92));
   border: 1px solid rgba(var(--tone), 0.28); border-radius: 8px; padding: 5px 10px 5px 9px; white-space: nowrap;
-  backdrop-filter: blur(10px) saturate(1.3); -webkit-backdrop-filter: blur(10px) saturate(1.3);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .w-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex: none; background: rgb(var(--tone)); box-shadow: 0 0 8px rgba(var(--tone), 0.9); }
@@ -181,7 +180,7 @@
 .w-tag-gold { --tone: 250, 204, 21; }
 .w-tag-yellow { --tone: 252, 211, 77; }
 .w-num { font: 600 13px/1 var(--sans); color: #fff; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; white-space: nowrap; padding: 3px 6px; border-radius: 5px; background: rgba(8, 12, 20, 0.55); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
-.w-speedo { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 600 12px var(--sans); font-variant-numeric: tabular-nums; color: #f8fafc; background: linear-gradient(180deg, rgba(23, 30, 46, 0.8), rgba(12, 17, 28, 0.85)); border-radius: 12px; padding: 8px 10px 7px; border: 1px solid rgba(148, 163, 184, 0.22); backdrop-filter: blur(10px); box-shadow: 0 8px 28px rgba(0,0,0,0.45); }
+.w-speedo { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 600 12px var(--sans); font-variant-numeric: tabular-nums; color: #f8fafc; background: linear-gradient(180deg, rgba(23, 30, 46, 0.8), rgba(12, 17, 28, 0.85)); border-radius: 12px; padding: 8px 10px 7px; border: 1px solid rgba(148, 163, 184, 0.22); box-shadow: 0 8px 28px rgba(0,0,0,0.45); }
 .w-big { font: 500 15px var(--serif); font-style: italic; letter-spacing: 0.01em; color: #fef3c7; text-align: center; white-space: nowrap; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.95); }
 .w-stamp { font: 800 13px var(--sans); color: #ef4444; border: 2px solid #ef4444; padding: 2px 8px; border-radius: 4px; transform: rotate(-8deg); letter-spacing: 0.1em; background: rgba(15, 23, 42, 0.7); }
 
@@ -266,7 +265,7 @@ kbd { font: 600 12px var(--sans); border: 1px solid #cbd5e1; border-bottom-width
 
 /* stage additions */
 .sx-stage-tools { position: absolute; right: 16px; top: 14px; display: flex; gap: 6px; }
-.sx-stage-btn { font: 500 12.5px var(--sans); color: #e2e8f0; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 999px; padding: 6px 12px; cursor: pointer; backdrop-filter: blur(6px); }
+.sx-stage-btn { font: 500 12.5px var(--sans); color: #e2e8f0; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
 .sx-stage-btn:hover { border-color: #e2e8f0; }
 .sx-stage-hint { color: #94a3b8; }
 .sx-intro { position: absolute; left: 20px; bottom: 20px; max-width: 360px; background: #ffffff; color: var(--ink); border-radius: 14px; padding: 16px 18px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); font: 14px/1.5 var(--sans); animation: sx-in 0.35s ease; }
@@ -351,8 +350,8 @@ kbd { font: 600 12px var(--sans); border: 1px solid #cbd5e1; border-bottom-width
 .hx-parts .hx-muted { color: var(--faint); }
 
 /* sea world labels */
-.w-log { font: 12.5px var(--sans); font-variant-numeric: tabular-nums; color: #e7e2d6; background: linear-gradient(180deg, rgba(38, 31, 21, 0.86), rgba(22, 18, 12, 0.9)); border: 1px solid rgba(217, 180, 120, 0.32); border-radius: 10px; padding: 10px 14px; min-width: 210px; backdrop-filter: blur(10px); box-shadow: 0 10px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255, 230, 180, 0.06); }
+.w-log { font: 12.5px var(--sans); font-variant-numeric: tabular-nums; color: #e7e2d6; background: linear-gradient(180deg, rgba(38, 31, 21, 0.86), rgba(22, 18, 12, 0.9)); border: 1px solid rgba(217, 180, 120, 0.32); border-radius: 10px; padding: 10px 14px; min-width: 210px; box-shadow: 0 10px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255, 230, 180, 0.06); }
 .w-log-title { font: italic 600 14px var(--serif); color: #fcd34d; margin-bottom: 4px; }
 .w-log-row { padding: 3px 0; border-top: 1px solid rgba(217, 180, 120, 0.14); white-space: nowrap; }
 
-.sx-stage-label { background: rgba(3, 6, 14, 0.55); padding: 8px 12px; border-radius: 10px; backdrop-filter: blur(4px); }
+.sx-stage-label { background: rgba(3, 6, 14, 0.78); padding: 8px 12px; border-radius: 10px; }
