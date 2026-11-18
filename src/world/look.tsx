@@ -15,6 +15,6 @@ export function lookSky(): string | null {
 }
 
 /** The sky as background + light source. Brightness tuned for night scenes. */
-export function SkyLook({ file, intensity = 1.6, blur = 0.04 }: { file: string; intensity?: number; blur?: number }) {
-  return <Environment files={file} background backgroundBlurriness={blur} backgroundIntensity={0.9} environmentIntensity={intensity} />;
+export function SkyLook({ file, intensity = 0.8, blur = 0.04 }: { file: string; intensity?: number; blur?: number }) {
+  return <Environment files={file} background backgroundBlurriness={blur} backgroundIntensity={0.35} environmentIntensity={intensity} />;
 }
