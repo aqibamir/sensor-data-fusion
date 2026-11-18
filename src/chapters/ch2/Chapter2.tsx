@@ -141,6 +141,9 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
                 ]}
               />
               <Rule>Left of the bar: which hour we ask about. Right of the bar: which pages of the logbook we used.</Rule>
+              <Trap>
+                Two symbols that look almost the same on the slides: <M>{'Z_k'}</M> (plain Z, subscript k) is <b>this hour's</b> sensor output — in general a <i>set</i> of <M>{'m_k'}</M> readings, because a radar scan can return several dots. <M>{'\\mathcal Z^k'}</M> (curly Z, superscript k) is <b>everything so far</b>: <M>{'\\mathcal Z^k = \\{Z_k, \\mathcal Z^{k-1}\\}'}</M>. In this chapter each hour has exactly one sighting, so <M>{'Z_k = \\{z_k\\}'}</M> and <M>{'m_k = 1'}</M>.
+              </Trap>
               <P>
                 So the whole chapter is just three ways to fill this table: compare <M>k</M> with <M>l</M>. Predicted (<M>{'k > l'}</M>), filtered (<M>{'k = l'}</M>), retrodicted (<M>{'k < l'}</M>).
               </P>
@@ -502,6 +505,18 @@ export default function Chapter2({ onHome }: { onHome: () => void }) {
                 <Knob label="Sighting error σ" value={p.rc} min={3} max={30} step={1} onChange={set('rc')} fmt={(x) => x.toFixed(0)} unit=" nm" />
               </Controls>
               <Trap>The red curve is not a belief: it doesn't have to add up to 1. It's a score per position — “how well does this position explain what we saw?”</Trap>
+              <P>
+                The lecture writes the likelihood in its general form, <M>{'\\ell(x_k;\\, Z_k, m_k) \\propto p(Z_k, m_k \\mid x_k)'}</M>: “what can the current sensor output — <M>{'m_k'}</M> readings <M>{'Z_k'}</M> — say about the state?” It shows two cases:
+              </P>
+              <Formula
+                tex="\begin{gathered} \ell(x_k;\, z_k) = \mathcal N(z_k;\, H_k x_k,\, R_k) \quad \text{(1 target, 1 reading)} \\ \ell(x_k;\, Z_k, m_k) \propto (1 - P_D)\,\rho_F + P_D \sum_{j=1}^{m_k} \mathcal N(z_k^j;\, H_k x_k,\, R_k) \quad \text{(1 target, } m_k \text{ readings)} \end{gathered}"
+                rows={[
+                  ['m_k', 'how many readings came in this scan'],
+                  ['P_D', 'detection probability: the chance the sensor sees the ship at all'],
+                  ['\\rho_F', 'density of false readings (clutter) — false lights, waves, birds'],
+                ]}
+              />
+              <Ahead>This chapter only needs the first line. The second — “one of these readings is ours, or maybe none” — is Chapter 7, and it's the reason Chapter 8 (PDAF, MHT) exists. The loop stays exactly the same; only ℓ changes.</Ahead>
             </>
           ),
         },

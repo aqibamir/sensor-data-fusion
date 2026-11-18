@@ -1,6 +1,7 @@
 import { Html, Stars } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useMemo, useRef } from 'react';
+import { lookSky, SkyLook } from './look';
 import * as THREE from 'three';
 
 /**
@@ -22,13 +23,14 @@ export const COAST_Z = -4.2;
 
 export function SeaEnvironment({ fog = 0 }: { fog?: number }) {
   const near = 14 - fog * 8;
+  const sky = lookSky();
   return (
     <>
-      <color attach="background" args={['#06101C']} />
+      {sky ? <SkyLook file={sky} blur={fog * 0.4} /> : <color attach="background" args={['#06101C']} />}
       <fog attach="fog" args={['#0A1826', Math.max(near, 4), 40 - fog * 18]} />
-      <Stars radius={70} depth={30} count={fog > 0.5 ? 300 : 1500} factor={3} fade speed={0.3} />
-      <hemisphereLight args={['#8DA2C7', '#06101C', 0.9]} />
-      <ambientLight intensity={0.35} />
+      {!sky && <Stars radius={70} depth={30} count={fog > 0.5 ? 300 : 1500} factor={3} fade speed={0.3} />}
+      <hemisphereLight args={['#8DA2C7', '#06101C', sky ? 0.3 : 0.9]} />
+      <ambientLight intensity={sky ? 0.1 : 0.35} />
       <directionalLight position={[-8, 12, 6]} intensity={0.8} color="#CFE0FF" />
       <Water />
       <Coast />

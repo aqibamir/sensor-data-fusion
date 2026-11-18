@@ -1,6 +1,7 @@
 import { Html, RoundedBox, Stars } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useMemo, useRef } from 'react';
+import { lookSky, SkyLook } from './look';
 import * as THREE from 'three';
 
 /**
@@ -22,13 +23,14 @@ export const W = {
 };
 
 export function Environment() {
+  const sky = lookSky();
   return (
     <>
-      <color attach="background" args={['#070B16']} />
+      {sky ? <SkyLook file={sky} /> : <color attach="background" args={['#070B16']} />}
       <fog attach="fog" args={['#070B16', 18, 48]} />
-      <Stars radius={70} depth={30} count={1800} factor={3} fade speed={0.3} />
-      <hemisphereLight args={['#7C8DC0', '#0B1120', 0.9]} />
-      <ambientLight intensity={0.4} />
+      {!sky && <Stars radius={70} depth={30} count={1800} factor={3} fade speed={0.3} />}
+      <hemisphereLight args={['#7C8DC0', '#0B1120', sky ? 0.3 : 0.9]} />
+      <ambientLight intensity={sky ? 0.1 : 0.4} />
       <directionalLight position={[-6, 12, 8]} intensity={0.9} color="#C7D2FE" />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
         <planeGeometry args={[140, 80]} />

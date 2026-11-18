@@ -610,6 +610,9 @@ export default function Chapter1({ onHome }: { onHome: () => void }) {
                 ]}
                 note="The lecture writes 𝔼[x] = x̄ and ℂ[x] = P everywhere — on the χ² slides, in moment matching, in Kalman."
               />
+              <P>
+                Two properties every covariance matrix has, worth saying in an exam: it is <b>symmetric</b> (Cov[x, y] = Cov[y, x], so P = Pᵀ), and its diagonal entries — the variances — are <b>never negative</b>. More strongly, P is positive (semi-)definite: no direction can have negative spread. That's why the σ-contours are always ellipses, never something stranger.
+              </P>
               <Ahead>
                 In the Kalman filter the state is (position, velocity) and <M>{'\\mathbf P'}</M> is exactly this matrix. A tilted ellipse in Chapter 3 is this tilted ridge, seen from above.
               </Ahead>
