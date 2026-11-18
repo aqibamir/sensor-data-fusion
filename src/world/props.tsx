@@ -1,8 +1,9 @@
-import { Html, RoundedBox, Stars } from '@react-three/drei';
+import { ContactShadows, Html, RoundedBox, Stars } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useMemo, useRef } from 'react';
 import { lookSky, SkyLook } from './look';
 import * as THREE from 'three';
+import { NightSky, StudioFX, TreeLine, useNoiseTexture } from './studio';
 
 /**
  * The persistent night-road world of Chapter 1.
@@ -24,18 +25,24 @@ export const W = {
 
 export function Environment() {
   const sky = lookSky();
+  const ground = useNoiseTexture(256, 7, [28, 16], 0.9);
   return (
     <>
-      {sky ? <SkyLook file={sky} /> : <color attach="background" args={['#070B16']} />}
-      <fog attach="fog" args={['#070B16', 18, 48]} />
-      {!sky && <Stars radius={70} depth={30} count={1800} factor={3} fade speed={0.3} />}
-      <hemisphereLight args={['#7C8DC0', '#0B1120', sky ? 0.3 : 0.9]} />
-      <ambientLight intensity={sky ? 0.1 : 0.4} />
-      <directionalLight position={[-6, 12, 8]} intensity={0.9} color="#C7D2FE" />
+      {sky ? <SkyLook file={sky} /> : <NightSky />}
+      <fogExp2 attach="fog" args={['#151C30', 0.022]} />
+      {!sky && <Stars radius={70} depth={30} count={2200} factor={3} saturation={0} fade speed={0.3} />}
+      <hemisphereLight args={['#8FA2DA', '#1A2030', sky ? 0.3 : 1.1]} />
+      <ambientLight intensity={sky ? 0.08 : 0.25} />
+      {/* moonlight: cool, from high behind the viewer */}
+      <directionalLight position={[-8, 14, 10]} intensity={1.8} color="#B9CBFF" />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-        <planeGeometry args={[140, 80]} />
-        <meshStandardMaterial color={W.ground} roughness={1} />
+        <planeGeometry args={[160, 90]} />
+        <meshStandardMaterial color="#26302E" roughness={1} map={ground} />
       </mesh>
+      <TreeLine z={-16} from={-40} to={50} gap={0.9} seed={3} scale={1.1} color="#18223A" />
+      <TreeLine z={-22} from={-46} to={56} gap={0.8} seed={8} scale={1.5} color="#1A2440" />
+      <ContactShadows position={[0, 0.004, 0]} scale={[60, 12]} resolution={1024} blur={2.2} opacity={0.75} far={2} frames={Infinity} color="#000000" />
+      <StudioFX />
     </>
   );
 }
@@ -48,13 +55,14 @@ export function Road({ from = 20, to = 220, posts = [70, 160] as [number, number
     return d;
   }, [from, to]);
   const len = (to - from) / 5;
+  const grain = useNoiseTexture(256, 2, [len / 2, 1], 1.4);
   const postMs: number[] = [];
   for (let m = posts[0]; m <= posts[1]; m += 10) postMs.push(m);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), 0, 0]}>
         <planeGeometry args={[len, ROAD_W]} />
-        <meshStandardMaterial color={W.asphalt} roughness={0.9} />
+        <meshStandardMaterial color="#2A3140" roughness={0.85} roughnessMap={grain} map={grain} metalness={0.05} />
       </mesh>
       {[-1, 1].map((s) => (
         <mesh key={s} rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), 0.002, (s * ROAD_W) / 2 - s * 0.04]}>
@@ -65,7 +73,7 @@ export function Road({ from = 20, to = 220, posts = [70, 160] as [number, number
       {dashes.map((m) => (
         <mesh key={m} rotation={[-Math.PI / 2, 0, 0]} position={[wx(m + 1), 0.003, 0]}>
           <planeGeometry args={[0.4, 0.035]} />
-          <meshBasicMaterial color="#CBD5E1" />
+          <meshBasicMaterial color="#E2E8F0" toneMapped={false} />
         </mesh>
       ))}
       {postMs.map((m) => (
@@ -156,15 +164,16 @@ export function Car({
           {[0.13, -0.13].map((z) => (
             <mesh key={z} position={[0.451, 0.19, z]}>
               <boxGeometry args={[0.01, 0.05, 0.09]} />
-              <meshStandardMaterial color="#FFF7D6" emissive="#FFF7D6" emissiveIntensity={3} />
+              <meshBasicMaterial color={[4, 3.8, 3.2]} toneMapped={false} />
             </mesh>
           ))}
           {[0.14, -0.14].map((z) => (
             <mesh key={'t' + z} position={[-0.451, 0.19, z]}>
               <boxGeometry args={[0.01, 0.04, 0.1]} />
-              <meshStandardMaterial color="#EF4444" emissive="#EF4444" emissiveIntensity={2.5} />
+              <meshBasicMaterial color={[3, 0.25, 0.2]} toneMapped={false} />
             </mesh>
           ))}
+          <Headlight />
           <mesh position={[1.45, 0.12, 0]} rotation={[0, 0, Math.PI / 2]}>
             <coneGeometry args={[0.55, 2, 24, 1, true]} />
             <meshBasicMaterial color="#FFF3C4" transparent opacity={0.07} side={THREE.DoubleSide} depthWrite={false} />
@@ -184,6 +193,21 @@ export function Car({
         </>
       )}
     </group>
+  );
+}
+
+/** A real light pool on the road in front of the car. */
+function Headlight() {
+  const target = useMemo(() => {
+    const o = new THREE.Object3D();
+    o.position.set(3, 0, 0);
+    return o;
+  }, []);
+  return (
+    <>
+      <primitive object={target} />
+      <spotLight position={[0.46, 0.2, 0]} target={target} angle={0.42} penumbra={0.7} intensity={9} distance={7} decay={1.4} color="#FFF1CC" />
+    </>
   );
 }
 
