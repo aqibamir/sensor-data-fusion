@@ -7,7 +7,7 @@ import { covFrom, ellipse, normal1, normal2 } from '../../engine/gaussian';
 import { M2, V2 } from '../../engine/mat2';
 import { mulberry32, randn } from '../../engine/rng';
 import { Camera, linspace, P3, Surface, useAnimated } from '../../three/primitives';
-import { Car, Column, Dune, Environment, Garage, Lamppost, Pin, Pulse, Radar, Road, ROAD_W, Speedometer, Tag, TrafficCone, W, wx } from '../../world/props';
+import { Car, Column, DataBox, Dune, Environment, Garage, Lamppost, Pin, Pulse, Radar, Road, ROAD_W, Speedometer, Tag, TrafficCone, W, wx } from '../../world/props';
 import { DEFAULTS, Params } from './params';
 
 /* ======================================================================
@@ -458,10 +458,7 @@ function Bars2x2({ mode }: { mode: 'joint' | 'marginal' | 'conditional' }) {
       const color = c > 0.5 && k === 1 ? W.post : m > 0.5 ? W.prior : W.sand;
       items.push(
         <group key={`${r}${k}`} position={[x, y0, r === 0 ? 1.3 : -1.3]}>
-          <mesh position={[0, h / 2, 0]}>
-            <boxGeometry args={[1.5, Math.max(h, 0.001), 1.5]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} transparent opacity={opacity} />
-          </mesh>
+          <DataBox w={1.5} h={h} d={1.5} color={color} opacity={opacity} />
           {opacity > 0.5 && m < 0.5 && (
             <Html position={[0, h + 0.3, 0]} center style={{ pointerEvents: 'none' }}>
               <div className="w-num" style={{ fontSize: 15 }}>

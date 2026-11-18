@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { ReactNode, Suspense, useMemo, useRef } from 'react';
 import { lookSky, SkyLook } from './look';
 import * as THREE from 'three';
-import { NightSky, StudioFX, TreeLine, useNoiseTexture } from './studio';
+import { DataMaterial, NightSky, StudioFX, TreeLine, useNoiseTexture } from './studio';
+import { Edges, Line } from '@react-three/drei';
 
 /**
  * The persistent night-road world of Chapter 1.
@@ -153,13 +154,18 @@ export function Road({ from = 20, to = 220, posts = [70, 160] as [number, number
 function DistancePost({ m }: { m: number }) {
   return (
     <group position={[wx(m), 0, ROAD_W / 2 + 0.25]}>
-      <mesh position={[0, 0.12, 0]}>
-        <boxGeometry args={[0.04, 0.24, 0.04]} />
-        <meshStandardMaterial color="#E2E8F0" emissive="#E2E8F0" emissiveIntensity={0.2} />
+      {/* white roadside marker post with a black band and an amber reflector */}
+      <mesh position={[0, 0.13, 0]}>
+        <boxGeometry args={[0.05, 0.26, 0.035]} />
+        <meshStandardMaterial color="#E8ECF1" roughness={0.45} />
       </mesh>
-      <mesh position={[0, 0.2, 0.021]}>
-        <boxGeometry args={[0.042, 0.05, 0.002]} />
-        <meshBasicMaterial color="#F59E0B" />
+      <mesh position={[0, 0.215, 0]}>
+        <boxGeometry args={[0.052, 0.06, 0.037]} />
+        <meshStandardMaterial color="#111827" roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.215, -0.019]}>
+        <boxGeometry args={[0.03, 0.04, 0.002]} />
+        <meshBasicMaterial color={[2.6, 1.5, 0.2]} toneMapped={false} />
       </mesh>
       <Html position={[0, -0.02, 0.18]} center style={{ pointerEvents: 'none' }}>
         <div className="w-post">{m} m</div>
@@ -355,50 +361,87 @@ function Headlight() {
 export const RADAR_M = 70;
 export function Radar() {
   const dish = useRef<THREE.Group>(null);
+  const beacon = useRef<THREE.MeshBasicMaterial>(null);
   useFrame(({ clock }) => {
     if (dish.current) dish.current.rotation.y = -Math.PI / 2 + 0.35 * Math.sin(clock.elapsedTime * 0.8);
+    if (beacon.current) beacon.current.opacity = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(clock.elapsedTime * 3));
   });
+  const steel = <meshStandardMaterial color="#9AA4B2" metalness={0.85} roughness={0.35} />;
+  const legs: [number, number][] = [[0.16, 0.16], [-0.16, 0.16], [0.16, -0.16], [-0.16, -0.16]];
   return (
     <group position={[wx(RADAR_M), 0, -ROAD_W / 2 - 0.9]}>
-      <mesh position={[0, 0.1, 0]}>
-        <cylinderGeometry args={[0.32, 0.4, 0.2, 6]} />
-        <meshStandardMaterial color="#334155" />
+      {/* concrete pad */}
+      <mesh position={[0, 0.04, 0]}>
+        <boxGeometry args={[0.7, 0.08, 0.7]} />
+        <meshStandardMaterial color="#5B6270" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0.9, 0]}>
-        <cylinderGeometry args={[0.05, 0.08, 1.6, 8]} />
-        <meshStandardMaterial color="#94A3B8" metalness={0.6} roughness={0.3} />
+      {/* lattice mast: four tapered legs + cross braces */}
+      {legs.map(([x, z], i) => (
+        <mesh key={i} position={[x * 0.75, 0.85, z * 0.75]} rotation={[z * -0.12, 0, x * 0.12]}>
+          <cylinderGeometry args={[0.014, 0.02, 1.6, 6]} />
+          {steel}
+        </mesh>
+      ))}
+      {[0.35, 0.75, 1.15, 1.5].map((y, i) => {
+        const r = 0.24 - y * 0.075;
+        return (
+          <group key={i} position={[0, y, 0]}>
+            {[0, Math.PI / 2, Math.PI, -Math.PI / 2].map((a) => (
+              <mesh key={a} position={[Math.cos(a) * r * 0.5, 0, Math.sin(a) * r * 0.5]} rotation={[0, -a, Math.PI / 2]}>
+                <cylinderGeometry args={[0.007, 0.007, r * 1.05, 4]} />
+                {steel}
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+      {/* equipment box */}
+      <mesh position={[0, 1.68, 0]}>
+        <boxGeometry args={[0.2, 0.12, 0.2]} />
+        <meshStandardMaterial color="#E5E7EB" roughness={0.5} metalness={0.2} />
       </mesh>
-      <group ref={dish} position={[0, 1.75, 0]}>
-        <mesh rotation={[0, 0, Math.PI / 2]} position={[0.08, 0, 0]}>
-          <sphereGeometry args={[0.38, 24, 12, 0, Math.PI * 2, 0, Math.PI / 3.2]} />
-          <meshStandardMaterial color="#E2E8F0" side={THREE.DoubleSide} metalness={0.4} roughness={0.3} />
+      <group ref={dish} position={[0, 1.88, 0]}>
+        {/* parabolic dish: lathe of y = x² */}
+        <mesh rotation={[0, 0, -Math.PI / 2]} position={[-0.02, 0, 0]}>
+          <latheGeometry args={[Array.from({ length: 14 }, (_, i) => new THREE.Vector2((i / 13) * 0.36, ((i / 13) * 0.36) ** 2 * 1.6)), 40]} />
+          <meshStandardMaterial color="#F1F5F9" metalness={0.3} roughness={0.25} side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[0.2, 0, 0]}>
-          <sphereGeometry args={[0.04, 10, 10]} />
-          <meshStandardMaterial color="#EF4444" emissive="#EF4444" emissiveIntensity={2} />
+        {/* feed horn on three struts */}
+        <mesh position={[0.26, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.025, 0.035, 0.06, 12]} />
+          <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.4} />
         </mesh>
+        {[0, (2 * Math.PI) / 3, (4 * Math.PI) / 3].map((a) => (
+          <mesh key={a} position={[0.14, Math.cos(a) * 0.14, Math.sin(a) * 0.14]} rotation={[a, 0, 0]}>
+            <cylinderGeometry args={[0.005, 0.005, 0.32, 4]} />
+            <meshStandardMaterial color="#94A3B8" metalness={0.8} roughness={0.3} />
+          </mesh>
+        ))}
       </group>
+      {/* aviation beacon */}
+      <mesh position={[0, 2.12, 0]}>
+        <sphereGeometry args={[0.025, 12, 12]} />
+        <meshBasicMaterial ref={beacon} color={[4, 0.3, 0.2]} toneMapped={false} transparent />
+      </mesh>
     </group>
   );
 }
 
-/** Expanding ring from the radar, repeated every `period` seconds. */
+/** Expanding ring from the radar, repeated every `period` seconds. A screen-space line, so it stays hairline-thin as it grows. */
+const CIRCLE = Array.from({ length: 129 }, (_, i) => [Math.cos((i / 128) * Math.PI * 2), 0, Math.sin((i / 128) * Math.PI * 2)] as [number, number, number]);
 export function Pulse({ period = 1.5 }: { period?: number }) {
-  const ring = useRef<THREE.Mesh>(null);
-  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  const ring = useRef<THREE.Group>(null);
+  const line = useRef<any>(null);
   useFrame(({ clock }) => {
     const t = (clock.elapsedTime % period) / period;
-    if (ring.current && mat.current) {
-      const s = 0.2 + t * 7;
-      ring.current.scale.set(s, s, s);
-      mat.current.opacity = 0.35 * (1 - t);
-    }
+    const s = 0.2 + t * 7;
+    ring.current?.scale.set(s, 1, s);
+    if (line.current?.material) line.current.material.opacity = 0.55 * (1 - t) ** 1.5;
   });
   return (
-    <mesh ref={ring} position={[wx(RADAR_M), 1.75, -ROAD_W / 2 - 0.9]} rotation={[-Math.PI / 2, 0, 0]}>
-      <torusGeometry args={[1, 0.012, 8, 96]} />
-      <meshBasicMaterial ref={mat} color={W.meas} transparent />
-    </mesh>
+    <group ref={ring} position={[wx(RADAR_M), 1.88, -ROAD_W / 2 - 0.9]}>
+      <Line ref={line} points={CIRCLE} color={new THREE.Color(W.meas).multiplyScalar(2.2)} lineWidth={1.6} transparent toneMapped={false} depthWrite={false} />
+    </group>
   );
 }
 
@@ -411,8 +454,8 @@ export function Pin({ m, z = 0, label, opacity = 1, h = 0.45 }: { m: number; z?:
         <meshBasicMaterial color={W.meas} transparent opacity={opacity} />
       </mesh>
       <mesh position={[0, h, 0]}>
-        <sphereGeometry args={[0.045, 14, 14]} />
-        <meshStandardMaterial color={W.meas} emissive={W.meas} emissiveIntensity={1.2} transparent opacity={opacity} />
+        <sphereGeometry args={[0.045, 20, 20]} />
+        <meshBasicMaterial color={new THREE.Color(W.meas).multiplyScalar(2.4)} toneMapped={false} transparent opacity={opacity} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]}>
         <circleGeometry args={[0.06, 18]} />
@@ -494,16 +537,28 @@ export function Column({ x, z = 0, h, color, w = 0.5, opacity = 0.92, label }: {
   const hh = Math.max(h, 0.0001);
   return (
     <group position={[x, 0, z]}>
-      <mesh position={[0, hh / 2, 0]}>
-        <boxGeometry args={[w, hh, w]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} transparent opacity={opacity} />
-      </mesh>
+      <DataBox w={w} h={hh} d={w} color={color} opacity={opacity} />
       {label !== undefined && (
         <Html position={[0, hh + 0.22, 0]} center style={{ pointerEvents: 'none' }}>
           <div className="w-num">{label}</div>
         </Html>
       )}
     </group>
+  );
+}
+
+/** A glowing data bar standing on y = 0: gradient body, bright rim, crisp bright edges. */
+export function DataBox({ w, h, d, color, opacity = 0.9 }: { w: number; h: number; d: number; color: string; opacity?: number }) {
+  const hh = Math.max(h, 0.0005);
+  const edge = useMemo(() => new THREE.Color(color).lerp(new THREE.Color('#FFFFFF'), 0.35).multiplyScalar(1.8), [color]);
+  return (
+    <mesh position={[0, hh / 2, 0]}>
+      <boxGeometry args={[w, hh, d]} />
+      <DataMaterial color={color} opacity={opacity * 0.8} height={hh} base={-hh / 2} rim={1.1} />
+      <Edges threshold={15}>
+        <lineBasicMaterial color={edge} toneMapped={false} transparent opacity={opacity} />
+      </Edges>
+    </mesh>
   );
 }
 
@@ -548,7 +603,7 @@ export function Dune({ ms, ps, scale, color = W.sand, opacity = 0.9, depth = 1.0
   if (!geom) return null;
   return (
     <mesh geometry={geom} position={[0, 0.002, z]}>
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.18} roughness={0.95} transparent opacity={opacity} />
+      <DataMaterial color={color} opacity={opacity} height={Math.max(...ps) * scale} rim={1.0} />
     </mesh>
   );
 }

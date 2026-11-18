@@ -118,3 +118,47 @@ export function TreeLine({ z, from, to, gap = 0.9, seed = 3, scale = 1, color = 
   }, [z, from, to, gap, seed, scale, color]);
   return count ? <primitive object={mesh} /> : null;
 }
+
+/**
+ * "Glowing data" material for the maths objects (bars, dunes, pins).
+ * A vertical gradient (deeper at the base, brighter at the top), a fresnel rim that goes above 1.0
+ * so the bloom pass gives it a soft halo, and a thin bright band near the top edge.
+ * Data objects are deliberately not lit by the scene: they are information, not things.
+ */
+export function DataMaterial({ color, opacity = 0.9, height = 1, base = 0, rim = 1.4 }: { color: string; opacity?: number; height?: number; base?: number; rim?: number }) {
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        uniforms: { col: { value: new THREE.Color() }, op: { value: 1 }, h: { value: 1 }, y0: { value: 0 }, rimK: { value: 1 } },
+        vertexShader: /* glsl */ `
+          varying vec3 vN; varying vec3 vV; varying float vY;
+          void main(){
+            vec4 w = modelMatrix * vec4(position,1.0);
+            vY = position.y;
+            vN = normalize(mat3(modelMatrix) * normal);
+            vV = normalize(cameraPosition - w.xyz);
+            gl_Position = projectionMatrix * viewMatrix * w;
+          }`,
+        fragmentShader: /* glsl */ `
+          uniform vec3 col; uniform float op; uniform float h; uniform float y0; uniform float rimK;
+          varying vec3 vN; varying vec3 vV; varying float vY;
+          void main(){
+            float t = clamp((vY - y0) / max(h, 1e-4), 0.0, 1.0);
+            vec3 base = col * mix(0.18, 1.0, t * t);
+            float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.5);
+            vec3 c = base + col * fr * rimK + col * smoothstep(0.92, 1.0, t) * 0.6;
+            gl_FragColor = vec4(c, op * mix(0.75, 1.0, fr));
+            #include <colorspace_fragment>
+          }`,
+      }),
+    [],
+  );
+  mat.uniforms.col.value.set(color);
+  mat.uniforms.op.value = opacity;
+  mat.uniforms.h.value = height;
+  mat.uniforms.rimK.value = rim;
+  mat.uniforms.y0.value = base;
+  return <primitive object={mat} attach="material" />;
+}
