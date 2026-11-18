@@ -1,6 +1,6 @@
-import { ContactShadows, Html, RoundedBox, Stars } from '@react-three/drei';
+import { ContactShadows, Html, RoundedBox, Stars, useGLTF, useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { ReactNode, useMemo, useRef } from 'react';
+import { ReactNode, Suspense, useMemo, useRef } from 'react';
 import { lookSky, SkyLook } from './look';
 import * as THREE from 'three';
 import { NightSky, StudioFX, TreeLine, useNoiseTexture } from './studio';
@@ -31,19 +31,79 @@ export function Environment() {
       {sky ? <SkyLook file={sky} /> : <NightSky />}
       <fogExp2 attach="fog" args={['#151C30', 0.022]} />
       {!sky && <Stars radius={70} depth={30} count={2200} factor={3} saturation={0} fade speed={0.3} />}
-      <hemisphereLight args={['#8FA2DA', '#1A2030', sky ? 0.3 : 1.1]} />
+      <hemisphereLight args={['#8FA2DA', '#1A2030', sky ? 0.3 : 0.7]} />
       <ambientLight intensity={sky ? 0.08 : 0.25} />
       {/* moonlight: cool, from high behind the viewer */}
       <directionalLight position={[-8, 14, 10]} intensity={1.8} color="#B9CBFF" />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-        <planeGeometry args={[160, 90]} />
-        <meshStandardMaterial color="#26302E" roughness={1} map={ground} />
-      </mesh>
+      <Suspense
+        fallback={
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+            <planeGeometry args={[160, 90]} />
+            <meshStandardMaterial color="#26302E" roughness={1} map={ground} />
+          </mesh>
+        }
+      >
+        <GroundPBR />
+      </Suspense>
       <TreeLine z={-16} from={-40} to={50} gap={0.9} seed={3} scale={1.1} color="#18223A" />
       <TreeLine z={-22} from={-46} to={56} gap={0.8} seed={8} scale={1.5} color="#1A2440" />
       <ContactShadows position={[0, 0.004, 0]} scale={[60, 12]} resolution={1024} blur={2.2} opacity={0.75} far={2} frames={Infinity} color="#000000" />
       <StudioFX />
     </>
+  );
+}
+
+/** A tiling PBR set from /public/road (ambientCG, CC0): colour + normal + roughness. */
+function usePBR(id: string, repeat: [number, number]) {
+  const t = useTexture({ map: `/road/${id}_Color.jpg`, normalMap: `/road/${id}_NormalGL.jpg`, roughnessMap: `/road/${id}_Roughness.jpg` });
+  return useMemo(() => {
+    const out: Record<string, THREE.Texture> = {};
+    for (const [k, v] of Object.entries(t)) {
+      const c = v.clone();
+      c.wrapS = c.wrapT = THREE.RepeatWrapping;
+      c.repeat.set(...repeat);
+      c.anisotropy = 8;
+      if (k === 'map') c.colorSpace = THREE.SRGBColorSpace;
+      c.needsUpdate = true;
+      out[k] = c;
+    }
+    return out;
+  }, [t, repeat[0], repeat[1]]);
+}
+
+function GroundPBR() {
+  const dirt = usePBR('Ground037', [40, 22]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+      <planeGeometry args={[160, 90]} />
+      <meshStandardMaterial {...dirt} color="#3C4440" roughness={1} />
+    </mesh>
+  );
+}
+
+function Verges({ from, to }: { from: number; to: number }) {
+  const len = (to - from) / 5;
+  const grass = usePBR('Grass004', [len / 1.2, 1]);
+  return (
+    <>
+      {[-1, 1].map((sd) => (
+        <mesh key={sd} rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), -0.004, sd * (ROAD_W / 2 + 0.55)]}>
+          <planeGeometry args={[len, 1.1]} />
+          <meshStandardMaterial {...grass} color="#4E5E4C" />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
+function Asphalt({ from, to }: { from: number; to: number }) {
+  const len = (to - from) / 5;
+  const a = usePBR('Asphalt025C', [len / 0.8, 2]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), 0, 0]}>
+      <planeGeometry args={[len, ROAD_W]} />
+      <meshStandardMaterial {...a} color="#9AA0AA" />
+    </mesh>
   );
 }
 
@@ -60,10 +120,17 @@ export function Road({ from = 20, to = 220, posts = [70, 160] as [number, number
   for (let m = posts[0]; m <= posts[1]; m += 10) postMs.push(m);
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), 0, 0]}>
-        <planeGeometry args={[len, ROAD_W]} />
-        <meshStandardMaterial color="#2A3140" roughness={0.85} roughnessMap={grain} map={grain} metalness={0.05} />
-      </mesh>
+      <Suspense
+        fallback={
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), 0, 0]}>
+            <planeGeometry args={[len, ROAD_W]} />
+            <meshStandardMaterial color="#2A3140" roughness={0.85} roughnessMap={grain} map={grain} metalness={0.05} />
+          </mesh>
+        }
+      >
+        <Asphalt from={from} to={to} />
+        <Verges from={from} to={to} />
+      </Suspense>
       {[-1, 1].map((s) => (
         <mesh key={s} rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), 0.002, (s * ROAD_W) / 2 - s * 0.04]}>
           <planeGeometry args={[len, 0.03]} />
@@ -101,8 +168,8 @@ function DistancePost({ m }: { m: number }) {
   );
 }
 
-/** A low-poly car facing +X. `ghost` renders a translucent single-colour copy (a belief, not a car). */
-export function Car({
+/** Hand-built fallback car (shown while the model loads, and for ghost/belief copies). */
+function SimpleCar({
   position = [0, 0, 0],
   color = '#E5E7EB',
   opacity = 1,
@@ -196,6 +263,79 @@ export function Car({
   );
 }
 
+/** A car facing +X, 4.5 m long. Real CC0 model (Quaternius); `ghost` renders a translucent belief copy instead. */
+export function Car(props: Parameters<typeof SimpleCar>[0]) {
+  if (props.ghost) return <SimpleCar {...props} />;
+  return (
+    <Suspense fallback={<SimpleCar {...props} />}>
+      <ModelCar {...props} />
+    </Suspense>
+  );
+}
+
+const CAR_FILES = { car: '/road/car1.glb', police: '/road/police.glb' };
+const CAR_LEN = { car: 4.22, police: 3.73 };
+
+function ModelCar({ position = [0, 0, 0], opacity = 1, lights = true, spin = 0, police = false, scale = 1 }: Parameters<typeof SimpleCar>[0]) {
+  const kind = police ? 'police' : 'car';
+  const { scene } = useGLTF(CAR_FILES[kind]);
+  const transparent = opacity < 1;
+  // per-instance clone with its own materials (opacity and lamp state differ between cars)
+  const { root, wheels, lamps } = useMemo(() => {
+    const root = scene.clone(true);
+    const wheels: THREE.Object3D[] = [];
+    const lamps: Record<string, THREE.MeshStandardMaterial[]> = {};
+    root.traverse((o) => {
+      if (/Wheel/i.test(o.name)) wheels.push(o);
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      const mats = (Array.isArray(m.material) ? m.material : [m.material]).map((mm) => {
+        const c = (mm as THREE.MeshStandardMaterial).clone();
+        if (c.name === 'Windows') Object.assign(c, { metalness: 0.9, roughness: 0.08 });
+        else if (c.name === 'Black') c.roughness = 0.85;
+        else if (/Lights/.test(c.name)) (lamps[c.name] ||= []).push(c);
+        else Object.assign(c, { metalness: 0.45, roughness: 0.32 }); // painted body: a clear, glossy look
+        return c;
+      });
+      m.material = Array.isArray(m.material) ? mats : mats[0];
+    });
+    return { root, wheels, lamps };
+  }, [scene]);
+  useMemo(() => {
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      (Array.isArray(m.material) ? m.material : [m.material]).forEach((mm) => {
+        Object.assign(mm, { transparent, opacity, depthWrite: !transparent || opacity > 0.5 });
+      });
+    });
+    const glow = (names: string[], col: THREE.ColorRepresentation, k: number) =>
+      names.forEach((n) => (lamps[n] ?? []).forEach((mm) => Object.assign(mm, { emissive: new THREE.Color(col), emissiveIntensity: lights ? k : 0, toneMapped: !lights })));
+    glow(['Headlights', 'WhiteLights'], '#FFF4D6', 6);
+    glow(['TailLights'], '#FF2A1A', 4);
+  }, [root, lamps, opacity, transparent, lights]);
+  useFrame(({ clock }) => {
+    wheels.forEach((w) => (w.rotation.x = -spin));
+    if (police) {
+      const on = Math.floor(clock.elapsedTime * 4) % 2 === 0;
+      (lamps.BlueLights ?? []).forEach((mm) => Object.assign(mm, { emissive: new THREE.Color('#2F6BFF'), emissiveIntensity: on ? 8 : 0.3, toneMapped: false }));
+      (lamps.WhiteLights ?? []).forEach((mm) => (mm.emissiveIntensity = on ? 0.3 : 8));
+    }
+  });
+  const k = (0.9 / CAR_LEN[kind]) * scale;
+  return (
+    <group position={position}>
+      <primitive object={root} scale={k} rotation={[0, Math.PI / 2, 0]} />
+      {lights && opacity > 0.5 && (
+        <group scale={scale}>
+          <Headlight />
+        </group>
+      )}
+    </group>
+  );
+}
+useGLTF.preload(CAR_FILES.car);
+
 /** A real light pool on the road in front of the car. */
 function Headlight() {
   const target = useMemo(() => {
@@ -206,7 +346,7 @@ function Headlight() {
   return (
     <>
       <primitive object={target} />
-      <spotLight position={[0.46, 0.2, 0]} target={target} angle={0.42} penumbra={0.7} intensity={9} distance={7} decay={1.4} color="#FFF1CC" />
+      <spotLight position={[0.46, 0.2, 0]} target={target} angle={0.42} penumbra={0.7} intensity={16} distance={8} decay={1.3} color="#FFF1CC" />
     </>
   );
 }

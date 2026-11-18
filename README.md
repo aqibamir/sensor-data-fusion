@@ -26,4 +26,4 @@ npm test         # math-engine tests
 
 ## Credits
 
-Space textures in `public/space/` — three.js examples (MIT), derived from NASA imagery. Night skies in `public/hdri/` — Poly Haven (CC0).
+Road models and textures in `public/road/` — Quaternius and ambientCG (CC0). Space textures in `public/space/` — three.js examples (MIT), derived from NASA imagery. Night skies in `public/hdri/` — Poly Haven (CC0).
