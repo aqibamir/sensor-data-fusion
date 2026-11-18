@@ -71,12 +71,13 @@ function usePBR(id: string, repeat: [number, number]) {
   }, [t, repeat[0], repeat[1]]);
 }
 
+/** The field: matte meadow grass (no roughness map, faint bumps) so moonlight can't make it glitter like water. */
 function GroundPBR() {
-  const dirt = usePBR('Ground037', [40, 22]);
+  const g = usePBR('Grass004', [60, 34]);
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
       <planeGeometry args={[160, 90]} />
-      <meshStandardMaterial {...dirt} color="#3C4440" roughness={1} />
+      <meshStandardMaterial map={g.map} normalMap={g.normalMap} normalScale={new THREE.Vector2(0.25, 0.25)} color="#4A5A34" roughness={1} metalness={0} />
     </mesh>
   );
 }
@@ -89,7 +90,7 @@ function Verges({ from, to }: { from: number; to: number }) {
       {[-1, 1].map((sd) => (
         <mesh key={sd} rotation={[-Math.PI / 2, 0, 0]} position={[wx((from + to) / 2), -0.004, sd * (ROAD_W / 2 + 0.55)]}>
           <planeGeometry args={[len, 1.1]} />
-          <meshStandardMaterial {...grass} color="#4E5E4C" />
+          <meshStandardMaterial map={grass.map} color="#5B6A3E" roughness={1} metalness={0} />
         </mesh>
       ))}
     </>
