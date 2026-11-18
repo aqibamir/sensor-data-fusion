@@ -23,3 +23,7 @@ npm test         # math-engine tests
 - [x] Ch 2 "The ship in the fog" — Bayesian recursion: story (`src/chapters/ch2/`), practice, deep-dive slot; screenplay in `docs/scripts/ch2-script.md`
 - [x] Ch 3 "Bringing them home" — Kalman filter (`src/chapters/ch3/`), practice, deep-dive slot; screenplay in `docs/scripts/ch3-script.md`
 - [ ] Ch 0, Ch 4–10 (Ch 0 screenplay ready)
+
+## Credits
+
+Space textures in `public/space/` — three.js examples (MIT), derived from NASA imagery. Night skies in `public/hdri/` — Poly Haven (CC0).

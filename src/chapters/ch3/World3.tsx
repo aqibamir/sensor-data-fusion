@@ -1,4 +1,4 @@
-import { Html, Line, Stars } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -6,7 +6,7 @@ import { ellipse, normal1, normal2 } from '../../engine/gaussian';
 import { Coast, Gauss2, kfPredict, kfUpdate } from '../../engine/kalman2';
 import { M2, V2 } from '../../engine/mat2';
 import { Camera, P3, Surface, useAnimated } from '../../three/primitives';
-import { lookSky, SkyLook } from '../../world/look';
+import { SpaceSet } from '../../world/space';
 import { Params3 } from './model';
 
 /* ---------------------------------------------------------------- helpers */
@@ -44,33 +44,12 @@ function Tag({ position, children, tone }: { position: P3; children: ReactNode; 
 /* ---------------------------------------------------------------- the space set */
 
 function Space() {
-  const sky = lookSky();
-  const earth = useRef<THREE.Mesh>(null);
-  useFrame((_, dt) => {
-    if (earth.current) earth.current.rotation.y += dt * 0.05;
-  });
   return (
-    <>
-      {sky ? <SkyLook file={sky} intensity={0.5} /> : <color attach="background" args={['#03050B']} />}
-      <Stars radius={80} depth={40} count={3000} factor={3.5} fade speed={0.2} />
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[10, 4, 6]} intensity={1.4} color="#FFF6E5" />
-      <mesh ref={earth} position={[-7.4, 0, 0]}>
-        <sphereGeometry args={[1.3, 48, 48]} />
-        <meshStandardMaterial color="#2563EB" emissive="#1E3A8A" emissiveIntensity={0.35} roughness={0.7} />
-      </mesh>
-      <mesh position={[-7.4, 0, 0]} scale={1.04}>
-        <sphereGeometry args={[1.3, 32, 32]} />
-        <meshBasicMaterial color="#60A5FA" transparent opacity={0.12} side={THREE.BackSide} />
-      </mesh>
-      <mesh position={[7.3, 0, 0]}>
-        <sphereGeometry args={[0.5, 40, 40]} />
-        <meshStandardMaterial color="#D4D4D8" roughness={1} />
-      </mesh>
-      <Tag position={[-7.4, -1.7, 0]}>Earth</Tag>
-      <Tag position={[7.3, -0.85, 0]}>Moon · 384 000 km</Tag>
-      <Line points={[[-6, 0, 0], [6.8, 0, 0]]} color="#334155" lineWidth={1} dashed dashSize={0.2} gapSize={0.15} />
-    </>
+    <SpaceSet>
+      <Tag position={[-7.4, -1.75, 0]}>Earth</Tag>
+      <Tag position={[7.3, -0.85, 0]}>Moon · 384 000 km (not to scale)</Tag>
+      <Line points={[[-6, 0, 0], [6.8, 0, 0]]} color="#475569" lineWidth={1} dashed dashSize={0.2} gapSize={0.15} transparent opacity={0.6} />
+    </SpaceSet>
   );
 }
 
