@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { ReactNode, useMemo, useRef } from 'react';
 import { lookSky, SkyLook } from './look';
 import * as THREE from 'three';
+import { NightSky, StudioFX } from './studio';
 
 /**
  * The Chapter 2 world: a shipping lane at sea, at night, in fog.
@@ -22,40 +23,93 @@ export const S2 = {
 export const COAST_Z = -4.2;
 
 export function SeaEnvironment({ fog = 0 }: { fog?: number }) {
-  const near = 14 - fog * 8;
   const sky = lookSky();
   return (
     <>
-      {sky ? <SkyLook file={sky} blur={fog * 0.4} /> : <color attach="background" args={['#06101C']} />}
-      <fog attach="fog" args={['#0A1826', Math.max(near, 4), 40 - fog * 18]} />
-      {!sky && <Stars radius={70} depth={30} count={fog > 0.5 ? 300 : 1500} factor={3} fade speed={0.3} />}
-      <hemisphereLight args={['#8DA2C7', '#06101C', sky ? 0.3 : 0.9]} />
-      <ambientLight intensity={sky ? 0.1 : 0.35} />
-      <directionalLight position={[-8, 12, 6]} intensity={0.8} color="#CFE0FF" />
-      <Water />
+      {sky ? <SkyLook file={sky} blur={fog * 0.4} /> : <NightSky zenith="#030812" horizon="#13233A" glow="#2B3550" />}
+      <fogExp2 attach="fog" args={['#0E1C2E', 0.02 + fog * 0.05]} />
+      {!sky && <Stars radius={70} depth={30} count={fog > 0.5 ? 300 : 1800} factor={3} saturation={0} fade speed={0.3} />}
+      <hemisphereLight args={['#8DA2C7', '#06101C', sky ? 0.3 : 0.7]} />
+      <ambientLight intensity={sky ? 0.08 : 0.2} />
+      {/* moonlight from behind-left: it lays a glitter path on the water */}
+      <directionalLight position={MOON_DIR.clone().multiplyScalar(20).toArray()} intensity={1.4} color="#CFE0FF" />
+      <Ocean />
       <Coast />
+      <StudioFX bloom={0.8} />
     </>
   );
 }
 
-function Water() {
-  const mesh = useRef<THREE.Mesh>(null);
-  const geom = useMemo(() => new THREE.PlaneGeometry(160, 90, 120, 60), []);
-  const base = useMemo(() => Float32Array.from(geom.attributes.position.array as Float32Array), [geom]);
-  useFrame(({ clock }) => {
-    const pos = geom.attributes.position as THREE.BufferAttribute;
-    const t = clock.elapsedTime;
-    for (let i = 0; i < pos.count; i++) {
-      const x = base[i * 3];
-      const y = base[i * 3 + 1];
-      pos.setZ(i, 0.045 * Math.sin(x * 0.6 + t * 0.9) + 0.035 * Math.sin(y * 0.8 - t * 0.7));
-    }
-    pos.needsUpdate = true;
-    geom.computeVertexNormals();
-  });
+const MOON_DIR = new THREE.Vector3(-0.35, 0.45, -0.82).normalize();
+
+/**
+ * GPU ocean: four travelling waves summed in the vertex shader (no per-frame CPU work),
+ * analytic normals, fresnel blend between deep water and the sky, moonlight glitter, scene fog.
+ */
+function Ocean() {
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        fog: true,
+        uniforms: THREE.UniformsUtils.merge([
+          THREE.UniformsLib.fog,
+          {
+            t: { value: 0 },
+            deep: { value: new THREE.Color('#041320') },
+            shallow: { value: new THREE.Color('#0D3048') },
+            skyCol: { value: new THREE.Color('#1A2A44') },
+            moon: { value: MOON_DIR },
+          },
+        ]),
+        vertexShader: /* glsl */ `
+          uniform float t;
+          varying vec3 vPos; varying vec3 vN;
+          #include <fog_pars_vertex>
+          // dir.xy, amplitude, wavelength, speed
+          const vec4 W0 = vec4(1.0, 0.25, 0.040, 3.2);
+          const vec4 W1 = vec4(0.6, -0.8, 0.028, 2.1);
+          const vec4 W2 = vec4(-0.3, 1.0, 0.016, 1.3);
+          const vec4 W3 = vec4(0.9, 0.5, 0.010, 0.7);
+          void wave(vec4 w, float spd, vec2 p, inout float h, inout vec2 g){
+            vec2 d = normalize(w.xy); float k = 6.2831 / w.w; float ph = k * dot(d, p) - spd * t;
+            h += w.z * sin(ph); g += w.z * k * cos(ph) * d;
+          }
+          void main(){
+            vec3 p = (modelMatrix * vec4(position,1.0)).xyz;
+            float h = 0.0; vec2 g = vec2(0.0);
+            wave(vec4(W0.xy, W0.z, W0.w), 0.9, p.xz, h, g);
+            wave(vec4(W1.xy, W1.z, W1.w), 1.2, p.xz, h, g);
+            wave(vec4(W2.xy, W2.z, W2.w), 1.7, p.xz, h, g);
+            wave(vec4(W3.xy, W3.z, W3.w), 2.3, p.xz, h, g);
+            p.y += h;
+            vPos = p; vN = normalize(vec3(-g.x, 1.0, -g.y));
+            vec4 mvPosition = viewMatrix * vec4(p, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            #include <fog_vertex>
+          }`,
+        fragmentShader: /* glsl */ `
+          uniform vec3 deep; uniform vec3 shallow; uniform vec3 skyCol; uniform vec3 moon;
+          varying vec3 vPos; varying vec3 vN;
+          #include <fog_pars_fragment>
+          void main(){
+            vec3 n = normalize(vN); vec3 v = normalize(cameraPosition - vPos);
+            float fres = 0.02 + 0.7 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+            vec3 water = mix(deep, shallow, clamp(n.y * 0.5 + 0.2 * (1.0 - n.y) * 8.0, 0.0, 1.0));
+            vec3 col = mix(water, skyCol, fres);
+            vec3 r = reflect(-v, n);
+            float glit = pow(max(dot(r, moon), 0.0), 220.0);
+            col += vec3(2.6, 2.8, 3.2) * glit + vec3(0.25, 0.3, 0.4) * pow(max(dot(r, moon), 0.0), 18.0) * 0.4;
+            gl_FragColor = vec4(col, 1.0);
+            #include <colorspace_fragment>
+            #include <fog_fragment>
+          }`,
+      }),
+    [],
+  );
+  useFrame(({ clock }) => (mat.uniforms.t.value = clock.elapsedTime));
   return (
-    <mesh ref={mesh} geometry={geom} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]}>
-      <meshStandardMaterial color={S2.water} roughness={0.35} metalness={0.4} />
+    <mesh material={mat} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]}>
+      <planeGeometry args={[160, 90, 320, 180]} />
     </mesh>
   );
 }
@@ -213,20 +267,49 @@ export function Reef({ nm, z = 1.4, label = true }: { nm: number; z?: number; la
 }
 
 /** Drifting fog banks (soft translucent blobs). */
+/** Soft drifting fog: camera-facing sprites with a feathered noise-gradient texture (no hard edges). */
+function useFogTexture() {
+  return useMemo(() => {
+    const n = 128;
+    const c = document.createElement('canvas');
+    c.width = c.height = n;
+    const g = c.getContext('2d')!;
+    const grd = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+    grd.addColorStop(0, 'rgba(255,255,255,1)');
+    grd.addColorStop(0.45, 'rgba(255,255,255,0.55)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, n, n);
+    // break up the circle with soft blotches
+    g.globalCompositeOperation = 'destination-out';
+    for (let k = 0; k < 40; k++) {
+      const x = ((k * 37) % n), y = ((k * 61) % n), r = 6 + ((k * 13) % 18);
+      const b = g.createRadialGradient(x, y, 0, x, y, r);
+      b.addColorStop(0, 'rgba(0,0,0,0.25)');
+      b.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = b;
+      g.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+}
+
 export function FogBanks({ amount = 1 }: { amount?: number }) {
   const g = useRef<THREE.Group>(null);
+  const tex = useFogTexture();
   useFrame(({ clock }) => {
-    if (g.current) g.current.position.x = ((clock.elapsedTime * 0.3) % 20) - 10;
+    if (g.current) g.current.position.x = ((clock.elapsedTime * 0.25) % 20) - 10;
   });
-  const blobs = useMemo(() => Array.from({ length: 22 }, (_, i) => [(i * 7.3) % 40 - 20, 0.5 + ((i * 3) % 5) * 0.15, ((i * 5.1) % 8) - 4, 1.5 + ((i * 13) % 7) * 0.3] as const), []);
+  const blobs = useMemo(() => Array.from({ length: 46 }, (_, i) => [((i * 7.3) % 46) - 23, 0.25 + ((i * 3) % 5) * 0.12, ((i * 5.1) % 9) - 4.5, 2.2 + ((i * 13) % 7) * 0.45] as const), []);
   if (amount <= 0) return null;
   return (
     <group ref={g}>
       {blobs.map(([x, y, z, r], i) => (
-        <mesh key={i} position={[x, 0.15 + (y - 0.5) * 0.3, z - 1.5]} scale={[r * 1.6, r * 0.18, r]}>
-          <sphereGeometry args={[1, 18, 10]} />
-          <meshBasicMaterial color="#B6C6D6" transparent opacity={0.035 * amount} depthWrite={false} />
-        </mesh>
+        <sprite key={i} position={[x, y, z - 1.5]} scale={[r * 2.2, r * 0.9, 1]}>
+          <spriteMaterial map={tex} color="#9FB2C8" transparent opacity={0.12 * amount} depthWrite={false} rotation={(i * 0.7) % 3} />
+        </sprite>
       ))}
     </group>
   );
