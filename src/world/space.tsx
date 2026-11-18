@@ -1,8 +1,8 @@
-import { PerformanceMonitor, Stars, useCubeTexture, useTexture } from '@react-three/drei';
+import { Stars, useCubeTexture, useTexture } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Bloom, EffectComposer } from '@react-three/postprocessing';
-import { ReactNode, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { StudioFX } from './studio';
 
 /**
  * Realistic space set for Chapter 3.
@@ -15,10 +15,8 @@ export const MOON = { pos: new THREE.Vector3(7.3, 0, 0), r: 0.5 };
 export const SUN_DIR = new THREE.Vector3(0.55, 0.35, 0.76).normalize();
 
 export function SpaceSet({ children }: { children?: ReactNode }) {
-  const [rich, setRich] = useState(true);
   return (
     <>
-      <PerformanceMonitor onDecline={() => setRich(false)} flipflops={2} onFallback={() => setRich(false)} />
       <ambientLight intensity={0.06} />
       <directionalLight position={SUN_DIR.clone().multiplyScalar(30)} intensity={2.2} color="#FFF4E0" />
       <Suspense fallback={<SimpleSpace />}>
@@ -28,11 +26,8 @@ export function SpaceSet({ children }: { children?: ReactNode }) {
       </Suspense>
       <Sun />
       {children}
-      {rich && (
-        <EffectComposer multisampling={0}>
-          <Bloom mipmapBlur intensity={0.9} luminanceThreshold={0.85} luminanceSmoothing={0.2} />
-        </EffectComposer>
-      )}
+      {/* shared grade; no AO in space (nothing to occlude against) */}
+      <StudioFX bloom={0.9} ao={false} vignette={0.6} />
     </>
   );
 }
@@ -135,12 +130,12 @@ function RealEarth() {
   });
   return (
     <group position={EARTH.pos}>
-      <mesh ref={earth} material={mat} rotation={[0.41, 0, 0]}>
+      <mesh ref={earth} material={mat} rotation={[0, 0, 0.41]}>
         <sphereGeometry args={[EARTH.r, 64, 48]} />
       </mesh>
-      <mesh ref={cloud} rotation={[0.41, 0, 0]} scale={1.012}>
+      <mesh ref={cloud} rotation={[0, 0, 0.41]} scale={1.012}>
         <sphereGeometry args={[EARTH.r, 48, 32]} />
-        <meshStandardMaterial color="#FFFFFF" alphaMap={clouds} transparent opacity={0.85} depthWrite={false} roughness={1} />
+        <meshStandardMaterial color="#C9CFD8" alphaMap={clouds} transparent opacity={0.55} depthWrite={false} roughness={1} />
       </mesh>
       <Atmosphere />
     </group>
