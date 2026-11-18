@@ -1,6 +1,6 @@
-import { Html, Line } from '@react-three/drei';
+import { Html, Line, useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, ReactNode, Suspense, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { ellipse, normal1, normal2 } from '../../engine/gaussian';
 import { Coast, Gauss2, kfPredict, kfUpdate } from '../../engine/kalman2';
@@ -53,7 +53,61 @@ function Space() {
   );
 }
 
+/**
+ * NASA's Apollo–Soyuz model (NASA 3D Resources, credit NASA), showing only the Apollo command/service
+ * module parts (they lie at x < 0 in the file; the Soyuz and docking module are dropped).
+ * Nose (command module) points +x, towards the Moon. ~1 world unit long.
+ */
+function ApolloModel({ opacity, burn }: { opacity: number; burn: boolean }) {
+  const { scene } = useGLTF('/space/apollo_soyuz.glb');
+  const model = useMemo(() => {
+    const root = scene.clone(true);
+    const drop: THREE.Object3D[] = [];
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.geometry.computeBoundingBox();
+      if (m.geometry.boundingBox!.max.x > 0) drop.push(m);
+      else {
+        const mats = (Array.isArray(m.material) ? m.material : [m.material]).map((mat) => {
+          const c = (mat as THREE.MeshStandardMaterial).clone();
+          if (opacity < 1) {
+            c.transparent = true;
+            c.opacity = opacity;
+          }
+          return c;
+        });
+        m.material = Array.isArray(m.material) ? mats : mats[0];
+      }
+    });
+    drop.forEach((o) => o.parent?.remove(o));
+    return root;
+  }, [scene, opacity]);
+  return (
+    <group scale={0.085} position={[0.53, 0, 0]}>
+      <primitive object={model} />
+      {burn && (
+        <mesh position={[-13.4, 0.3, 0.2]} rotation={[0, 0, Math.PI / 2]}>
+          <coneGeometry args={[1.1, 3.2, 16]} />
+          <meshBasicMaterial color={new THREE.Color(3, 1.6, 0.6)} toneMapped={false} transparent opacity={0.85} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+useGLTF.preload('/space/apollo_soyuz.glb');
+
 function Spacecraft({ x, opacity = 1, burn = false }: { x: number; opacity?: number; burn?: boolean }) {
+  return (
+    <group position={[x, 0, 0]}>
+      <Suspense fallback={<SimpleCraft x={0} opacity={opacity} burn={burn} />}>
+        <ApolloModel opacity={opacity} burn={burn} />
+      </Suspense>
+    </group>
+  );
+}
+
+function SimpleCraft({ x, opacity = 1, burn = false }: { x: number; opacity?: number; burn?: boolean }) {
   return (
     <group position={[x, 0, 0]} rotation={[0, 0, -Math.PI / 2]} scale={0.32}>
       <mesh position={[0, 0.7, 0]}>
